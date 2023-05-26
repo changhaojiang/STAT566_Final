@@ -1,1 +1,3 @@
-# STAT566_Final
+# STAT566(Causal Modeling)
+
+## Final Project
