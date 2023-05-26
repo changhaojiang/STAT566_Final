@@ -74,8 +74,9 @@ sum(diabetes[diabetes$score>mean(diabetes$score),]$Diabetes_binary==1)
 ```
 
 # Fit logistic regression
-```{r}
 
+```{r}
+lm(score)
 ```
 
 
