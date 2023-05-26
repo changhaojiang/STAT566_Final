@@ -1,4 +1,4 @@
-### STAT566(Causal Modeling)
+## STAT566(Causal Modeling)
 
 ### Final Project
 
