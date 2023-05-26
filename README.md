@@ -1,3 +1,5 @@
-# STAT566(Causal Modeling)
+## STAT566(Causal Modeling)
 
-## Final Project
+### Final Project
+
+Assess the causal effect on Diabetes
