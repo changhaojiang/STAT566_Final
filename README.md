@@ -2,4 +2,4 @@
 
 ### Final Project
 
-Assess the causal effect on Diabetes
+Assess the causal effect of a combination of treatments on Diabetes
