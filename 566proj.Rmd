@@ -1,0 +1,53 @@
+---
+title: "566proj"
+author: "Tianyang Jiang"
+date: '2023-05-25'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/Desktop/STAT566")
+library(readr)
+equaldata <- read.csv("diabetes_binary_5050split_health_indicators_BRFSS2015.csv")
+```
+
+
+```{r}
+library(randomForest)
+fit.forest= randomForest(Diabetes_binary~HvyAlcoholConsump+Smoker+PhysActivity+Fruits+
+                           Veggies,data = equaldata, na.action = na.roughfix)
+importance(fit.forest)
+```
+
+```{r}
+w1 = importance(fit.forest)[1]/sum(importance(fit.forest))
+w2 = importance(fit.forest)[2]/sum(importance(fit.forest))
+w3 = importance(fit.forest)[3]/sum(importance(fit.forest))
+w4 = importance(fit.forest)[4]/sum(importance(fit.forest))
+w5 = importance(fit.forest)[5]/sum(importance(fit.forest))
+```
+
+```{r}
+data <- read.csv("diabetes_binary_health_indicators_BRFSS2015.csv")
+```
+
+
+```{r}
+score = -data$HvyAlcoholConsump*w1-data$Smoker*w2+data$PhysActivity*w3+data$Fruits*w4+data$Veggies*w5
+summary(score)
+hist(score)
+library(dplyr)
+data %>% filter(score > 0.4112) %>% summarise(n=n())
+data %>% filter(score <= 0.4112) %>% summarise(n=n())
+```
+
+```{r}
+data$score = score
+sum(data[data$score<=mean(data$score),]$Diabetes_binary==1)
+sum(data[data$score>mean(data$score),]$Diabetes_binary==1)
+```
+
