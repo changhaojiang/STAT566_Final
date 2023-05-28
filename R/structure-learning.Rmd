@@ -1,0 +1,148 @@
+---
+title: "Structure Learning"
+output: html_document
+date: "2023-05-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## prepare
+
+```{r}
+library(Rgraphviz)
+library(RBGL)
+library(abind)
+library(corpcor)
+library(sfsmisc)
+library(robustbase)
+library(pcalg)
+library(graph)
+library(abind)
+library(data.table)
+
+plotcpdag <- "Rgraphviz" %in% print(.packages(lib.loc = .libPaths()[1])) 
+plotcpdag 
+```
+
+
+```{r}
+data_dir <- "~/Desktop"
+diabetes <- fread(file.path(data_dir,"Diabetes.csv"))
+```
+
+
+```{r}
+attr(diabetes,"names")
+```
+
+
+```{r}
+diabetes$scoreCat <- ifelse(diabetes$scoreCat == "> mean score", 1, 0)
+```
+
+
+```{r}
+diabetes$scoreCat
+```
+
+
+```{r}
+new <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
+```
+
+## see correlatioon
+
+```{r}
+cor(new)
+```
+
+
+## Using the FCI Algorithm to estimate an ancestral graph
+
+```{r}
+n <- nrow(new)
+p <- ncol(new)
+indepTest <- gaussCItest
+suffStat <- list(C=cor(new), n = n)
+
+## estimate Partial Ancestral Graph (PAG)
+alpha <- 0.05
+fci.fit <- fci(suffStat, indepTest, labels=c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"), alpha = alpha, verbose = TRUE)
+
+fci.fit@amat
+## This should give you four edges. 
+## Can you work out what they are?
+
+## This command gives a plot of the partial ancestral graph:
+
+if (plotcpdag) {
+	dev.off()
+  plot(fci.fit)
+}
+```
+
+
+## Using the PC Algorithm to do the job for us
+
+```{r}
+##### Using the PC Algorithm to do the job for us:
+n <- nrow(new)
+p <- ncol(new)
+indepTest <- gaussCItest
+suffStat <- list(C=cor(new), n = n)
+
+## estimate CPDAG
+alpha <- 0.05
+pc.fit <- pc(suffStat, indepTest, p = p, alpha = alpha, verbose = TRUE)
+
+showAmat(pc.fit)
+showEdgeList(pc.fit,names)
+if (plotcpdag) {
+  plot(pc.fit, main = "Estimated CPDAG",labels=c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"))
+}
+```
+
+## Use full data for pc algorithm
+
+```{r}
+ori <- diabetes[, c("HvyAlcoholConsump", "Smoker", "PhysActivity", "Fruits", "Veggies", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
+```
+
+
+```{r}
+n <- nrow(ori)
+p <- ncol(ori)
+indepTest <- gaussCItest
+suffStat <- list(C=cor(ori), n = n)
+```
+
+
+```{r}
+## estimate CPDAG
+alpha <- 0.05
+pc.fit <- pc(suffStat, indepTest, p = p, alpha = alpha, verbose = TRUE)
+```
+
+
+```{r}
+showAmat(pc.fit)
+showEdgeList(pc.fit,names)
+if (plotcpdag) {
+  plot(pc.fit, main = "Estimated CPDAG",labels=c("HvyAlcoholConsump", "Smoker", "PhysActivity", "Fruits", "Veggies", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"))
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
