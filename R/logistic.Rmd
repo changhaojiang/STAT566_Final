@@ -69,7 +69,7 @@ hist(score)
 diabetes %>% filter(score > 0.4112) %>% summarise(n=n())
 diabetes %>% filter(score <= 0.4112) %>% summarise(n=n())
 
-diabetes$score = score
+diabetes$score <- score
 sum(diabetes[diabetes$score<=mean(diabetes$score),]$Diabetes_binary==1)
 sum(diabetes[diabetes$score>mean(diabetes$score),]$Diabetes_binary==1)
 ```
