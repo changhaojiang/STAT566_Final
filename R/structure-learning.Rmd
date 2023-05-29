@@ -30,33 +30,21 @@ plotcpdag
 
 ```{r}
 data_dir <- "~/Desktop"
-diabetes <- fread(file.path(data_dir,"Diabetes.csv"))
-```
-
-
-```{r}
-attr(diabetes,"names")
+diabetes <- fread(file.path(data_dir, "Diabetes.csv"))
 ```
 
 
 ```{r}
 diabetes$scoreCat <- ifelse(diabetes$scoreCat == "> mean score", 1, 0)
+
+attr(diabetes,"names")
+dim(diabetes)
+diabetes[1:3]
 ```
 
 
 ```{r}
-diabetes$scoreCat
-```
-
-
-```{r}
-new <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
-```
-
-## see correlatioon
-
-```{r}
-cor(new)
+continuous <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
 ```
 
 
@@ -68,80 +56,112 @@ p <- ncol(new)
 indepTest <- gaussCItest
 suffStat <- list(C=cor(new), n = n)
 
-## estimate Partial Ancestral Graph (PAG)
 alpha <- 0.05
 fci.fit <- fci(suffStat, indepTest, labels=c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"), alpha = alpha, verbose = TRUE)
 
 fci.fit@amat
-## This should give you four edges. 
-## Can you work out what they are?
-
-## This command gives a plot of the partial ancestral graph:
 
 if (plotcpdag) {
-	dev.off()
+	#dev.off()
   plot(fci.fit)
 }
 ```
 
 
-## Using the PC Algorithm to do the job for us
+## Using the PC Algorithm for discete variables
 
 ```{r}
-##### Using the PC Algorithm to do the job for us:
-n <- nrow(new)
-p <- ncol(new)
-indepTest <- gaussCItest
-suffStat <- list(C=cor(new), n = n)
+dis1 <- diabetes[, c("scoreCat", "Stroke", "HeartDiseaseorAttack", "Sex", "Diabetes_binary", "Income")]
 
-## estimate CPDAG
-alpha <- 0.05
-pc.fit <- pc(suffStat, indepTest, p = p, alpha = alpha, verbose = TRUE)
+V1 <- colnames(dis1)
+sapply(dis1, function(v) nlevels(as.factor(v)))
+suffStat1 <- list(dm = dis1, nlev = c(2,2,2,2,2,8), adaptDF = FALSE)
 
-showAmat(pc.fit)
-showEdgeList(pc.fit,names)
-if (plotcpdag) {
-  plot(pc.fit, main = "Estimated CPDAG",labels=c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"))
-}
-```
 
-## Use full data for pc algorithm
+dis2 <- diabetes[, c("HighChol", "HighBP", "Education", "AnyHealthcare", "Diabetes_binary", "scoreCat")]
 
-```{r}
-ori <- diabetes[, c("HvyAlcoholConsump", "Smoker", "PhysActivity", "Fruits", "Veggies", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
+V2 <- colnames(dis2)
+sapply(dis2, function(v) nlevels(as.factor(v)))
+suffStat2 <- list(dm = dis2, nlev = c(2,2,6,2,2,2), adaptDF = FALSE)
 ```
 
 
-```{r}
-n <- nrow(ori)
-p <- ncol(ori)
-indepTest <- gaussCItest
-suffStat <- list(C=cor(ori), n = n)
+```{r, echo=FALSE}
+pc.D <- pc(suffStat, indepTest = disCItest, alpha = 0.01, 
+           labels = V, verbose = TRUE)
 ```
 
-
 ```{r}
-## estimate CPDAG
-alpha <- 0.05
-pc.fit <- pc(suffStat, indepTest, p = p, alpha = alpha, verbose = TRUE)
-```
-
-
-```{r}
-showAmat(pc.fit)
-showEdgeList(pc.fit,names)
-if (plotcpdag) {
-  plot(pc.fit, main = "Estimated CPDAG",labels=c("HvyAlcoholConsump", "Smoker", "PhysActivity", "Fruits", "Veggies", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"))
+if (require(Rgraphviz)) {
+  
+  plot(pc.D, main = "Estimated CPDAG", labels=c("scoreCat", "Stroke", "HeartDiseaseorAttack", "Sex", "Diabetes_binary", "Income"))
 }
 ```
 
 
+```{r}
+
+```
+
+
+```{r, echo=FALSE}
+pc.D <- pc(suffStat, indepTest = disCItest, alpha = 0.01, 
+           labels = V, verbose = TRUE)
+```
+
+```{r}
+if (require(Rgraphviz)) {
+  
+  plot(pc.D, main = "Estimated CPDAG", labels=c("HighChol", "HighBP", "Education", "AnyHealthcare", "Diabetes_binary", "scoreCat"))
+}
+```
+
+
+```{r}
+dis3 <- diabetes[, c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income")]
+V3 <- colnames(dis3)
+sapply(dis3, function(v) nlevels(as.factor(v)))
+
+suffStat3 <- list(dm = dis3, nlev = c(6,2,2,2,8), adaptDF = FALSE)
+```
+
+
+```{r, echo=FALSE}
+pc.D3 <- pc(suffStat3, indepTest = disCItest, alpha = 0.01, 
+           labels = V3, verbose = TRUE)
+```
+
+
+```{r}
+if (require(Rgraphviz)) {
+  
+  plot(pc.D3, main = "Estimated CPDAG", labels=c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income"))
+}
+```
 
 
 
+```{r}
+dis4 <- diabetes[, c("Stroke", "HighChol", "HighBP", "HeartDiseaseorAttack", "AnyHealthcare", "Sex")]
+
+V4 <- colnames(dis4)
+sapply(dis4, function(v) nlevels(as.factor(v)))
+
+suffStat4 <- list(dm = dis4, nlev = c(2,2,2,2,2,2), adaptDF = FALSE)
+```
 
 
+```{r, echo=FALSE}
+pc.D4 <- pc(suffStat4, indepTest = disCItest, alpha = 0.01, 
+            labels = V, verbose = TRUE)
+```
 
+
+```{r}
+if (require(Rgraphviz)) {
+  plot(pc.D4, main = "Estimated CPDAG", labels=c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income"))
+}
+```
 
 
 
