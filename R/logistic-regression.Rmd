@@ -1,6 +1,6 @@
 ---
 title: "Aseess the causal effect on diabetes"
-author: "Tianyang Jiang, Changhao Jiang, and Liuye Huang"
+author: "Changhao Jiang, Tianyang Jiang, and Liuye Huang"
 date: "`r Sys.Date()`"
 output: 
   html_document:
