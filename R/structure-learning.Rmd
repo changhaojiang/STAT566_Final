@@ -99,15 +99,11 @@ if (require(Rgraphviz)) {
 ```
 
 
-```{r}
-
-```
-
-
 ```{r, echo=FALSE}
 pc.D <- pc(suffStat, indepTest = disCItest, alpha = 0.01, 
            labels = V, verbose = TRUE)
 ```
+
 
 ```{r}
 if (require(Rgraphviz)) {
