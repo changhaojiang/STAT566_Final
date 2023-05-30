@@ -8,8 +8,9 @@ date: "2023-05-28"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Setup
 
-## prepare
+## R library and data input
 
 ```{r}
 library(Rgraphviz)
@@ -28,13 +29,14 @@ plotcpdag
 ```
 
 
+# Summarize data
+
+## Load diabetes data
+
 ```{r}
 data_dir <- "~/Desktop"
 diabetes <- fread(file.path(data_dir, "Diabetes.csv"))
-```
 
-
-```{r}
 diabetes$scoreCat <- ifelse(diabetes$scoreCat == "> mean score", 1, 0)
 
 attr(diabetes,"names")
@@ -42,23 +44,29 @@ dim(diabetes)
 diabetes[1:3]
 ```
 
+# Using the FCI Algorithm to estimate an ancestral graph
 
-```{r}
-continuous <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary")]
+```{r, echo=FALSE, results = 'hide'}
+continuous <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", 
+                          "HeartDiseaseorAttack", "Education", "AnyHealthcare", 
+                          "Income", "Sex", "Age", "Diabetes_binary")]
+
+n <- nrow(continuous)
+p <- ncol(continuous)
+indepTest <- gaussCItest
+suffStat <- list(C=cor(continuous), n = n)
+
+label_fci <- c("SC", "S", "HD", "HB", "BMI", 
+               "HA", "E", "HC", "I", 
+               "G", "A", "DB")
+alpha <- 0.05
+fci.fit <- fci(suffStat, indepTest, labels = label_fci, alpha = alpha, 
+               verbose = TRUE)
 ```
 
-
-## Using the FCI Algorithm to estimate an ancestral graph
+## draw the graph
 
 ```{r}
-n <- nrow(new)
-p <- ncol(new)
-indepTest <- gaussCItest
-suffStat <- list(C=cor(new), n = n)
-
-alpha <- 0.05
-fci.fit <- fci(suffStat, indepTest, labels=c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", "HeartDiseaseorAttack", "Education", "AnyHealthcare", "Income", "Sex", "Age", "Diabetes_binary"), alpha = alpha, verbose = TRUE)
-
 fci.fit@amat
 
 if (plotcpdag) {
@@ -67,98 +75,76 @@ if (plotcpdag) {
 }
 ```
 
+# Using the PC Algorithm for discete variables
 
-## Using the PC Algorithm for discete variables
+## Split into 4 parts due to computation cost
 
-```{r}
-dis1 <- diabetes[, c("scoreCat", "Stroke", "HeartDiseaseorAttack", "Sex", "Diabetes_binary", "Income")]
-
+```{r, warning=FALSE}
+dis1 <- diabetes[, c("scoreCat", "Stroke", "HeartDiseaseorAttack", "Sex", 
+            "Diabetes_binary", "Income")]
 V1 <- colnames(dis1)
 sapply(dis1, function(v) nlevels(as.factor(v)))
 suffStat1 <- list(dm = dis1, nlev = c(2,2,2,2,2,8), adaptDF = FALSE)
 
 
-dis2 <- diabetes[, c("HighChol", "HighBP", "Education", "AnyHealthcare", "Diabetes_binary", "scoreCat")]
-
+dis2 <- diabetes[, c("HighChol", "HighBP", "Education", "AnyHealthcare", 
+            "Diabetes_binary", "scoreCat")]
 V2 <- colnames(dis2)
 sapply(dis2, function(v) nlevels(as.factor(v)))
 suffStat2 <- list(dm = dis2, nlev = c(2,2,6,2,2,2), adaptDF = FALSE)
-```
 
 
-```{r, echo=FALSE}
-pc.D <- pc(suffStat, indepTest = disCItest, alpha = 0.01, 
-           labels = V, verbose = TRUE)
-```
-
-```{r}
-if (require(Rgraphviz)) {
-  
-  plot(pc.D, main = "Estimated CPDAG", labels=c("scoreCat", "Stroke", "HeartDiseaseorAttack", "Sex", "Diabetes_binary", "Income"))
-}
-```
-
-
-```{r, echo=FALSE}
-pc.D <- pc(suffStat, indepTest = disCItest, alpha = 0.01, 
-           labels = V, verbose = TRUE)
-```
-
-
-```{r}
-if (require(Rgraphviz)) {
-  
-  plot(pc.D, main = "Estimated CPDAG", labels=c("HighChol", "HighBP", "Education", "AnyHealthcare", "Diabetes_binary", "scoreCat"))
-}
-```
-
-
-```{r}
-dis3 <- diabetes[, c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income")]
+dis3 <- diabetes[, c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", 
+                    "Income")]
 V3 <- colnames(dis3)
 sapply(dis3, function(v) nlevels(as.factor(v)))
-
 suffStat3 <- list(dm = dis3, nlev = c(6,2,2,2,8), adaptDF = FALSE)
-```
 
 
-```{r, echo=FALSE}
-pc.D3 <- pc(suffStat3, indepTest = disCItest, alpha = 0.01, 
-           labels = V3, verbose = TRUE)
-```
-
-
-```{r}
-if (require(Rgraphviz)) {
-  
-  plot(pc.D3, main = "Estimated CPDAG", labels=c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income"))
-}
-```
-
-
-
-```{r}
-dis4 <- diabetes[, c("Stroke", "HighChol", "HighBP", "HeartDiseaseorAttack", "AnyHealthcare", "Sex")]
-
+dis4 <- diabetes[, c("Stroke", "HighChol", "HighBP", "HeartDiseaseorAttack", 
+                     "AnyHealthcare", "Sex")]
 V4 <- colnames(dis4)
 sapply(dis4, function(v) nlevels(as.factor(v)))
-
 suffStat4 <- list(dm = dis4, nlev = c(2,2,2,2,2,2), adaptDF = FALSE)
 ```
 
 
-```{r, echo=FALSE}
+## Calculate the relationship for each part
+
+```{r, echo = FALSE, results = 'hide'}
+pc.D1 <- pc(suffStat1, indepTest = disCItest, alpha = 0.01, 
+           labels = V1, verbose = TRUE)
+pc.D2 <- pc(suffStat2, indepTest = disCItest, alpha = 0.01, 
+           labels = V2, verbose = TRUE)
+pc.D3 <- pc(suffStat3, indepTest = disCItest, alpha = 0.01, 
+           labels = V3, verbose = TRUE)
 pc.D4 <- pc(suffStat4, indepTest = disCItest, alpha = 0.01, 
-            labels = V, verbose = TRUE)
+           labels = V4, verbose = TRUE)
 ```
 
+## Draw the four plots
 
 ```{r}
 if (require(Rgraphviz)) {
-  plot(pc.D4, main = "Estimated CPDAG", labels=c("Education", "Stroke", "HeartDiseaseorAttack", "Sex", "Income"))
+  
+  plot(pc.D1, main = "Estimated CPDAG", labels = c("scoreCat", "Stroke", 
+                                                 "HeartDiseaseorAttack", "Sex", 
+                                                 "Diabetes_binary", "Income"))
+  
+  plot(pc.D2, main = "Estimated CPDAG", labels = c("HighChol", "HighBP", 
+       "Education", "AnyHealthcare", "Diabetes_binary", "scoreCat"))
+  
+  plot(pc.D3, main = "Estimated CPDAG", labels = c("Education", "Stroke", 
+                                                   "HeartDiseaseorAttack", 
+                                                   "Sex", "Income"))
+  
+  plot(pc.D4, main = "Estimated CPDAG", labels = c("Stroke", "HighChol", 
+                                                   "HighBP", 
+                                                   "HeartDiseaseorAttack", 
+                                                   "AnyHealthcare", "Sex"))
+  
 }
 ```
-
 
 
 
