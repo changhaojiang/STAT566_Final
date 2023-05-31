@@ -25,6 +25,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(data.table)
 library(randomForest)
+library(sandwich)
+library(car)
 ```
 
 # Summarize data
@@ -84,27 +86,51 @@ diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
 ## Only consider exposure
 
 ```{r}
-model_treat <- glm(Diabetes_binary ~ Smoker + PhysActivity + Fruits + Veggies + 
-      HvyAlcoholConsump, data = diabetes, family = binomial)
-summary(model_treat)
-
 model_score <- glm(Diabetes_binary ~ scoreCat, data = diabetes, 
                    family = binomial)
 summary(model_score)
+
+Confint(model_score, vcov. = vcovHC(model_score, type = "HC0"))
 ```
 
 ## Regression Adjustment
 ```{r}
-model_treat_adj <- glm(Diabetes_binary ~ Smoker + PhysActivity + Fruits + 
-                         Veggies + HvyAlcoholConsump + Sex + Age + Income, 
-                       data = diabetes, family = binomial)
-summary(model_treat_adj)
-
 model_score_adj <- glm(Diabetes_binary ~ scoreCat + Sex + Age + Income,
                        data = diabetes, family = binomial)
 summary(model_score_adj)
+
+Confint(model_score_adj, vcov. = vcovHC(model_score_adj, type = "HC0"))
 ```
 
 
+```{r}
+
+knitr::kable(reg_results, digits = c(2, 2, 2, 3), align = "c", caption = "Linear Regression Results")
+
+
+```
+
+
+
+```{r}
+reg_results[1,"Std. Error"] <- 2
+```
+
+
+```{r}
+colnames(reg_results) <- c("a","b","c","d")
+```
+
+```{r}
+reg_results
+```
+
+```{r}
+summary(model_score)$coefficients
+```
+
+```{r}
+knitr::kable(reg_results, digits = c(2, 2, 2, 3), align = "c", caption = "Linear Regression Results")
+```
 
 
