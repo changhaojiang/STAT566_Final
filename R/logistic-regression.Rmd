@@ -90,7 +90,7 @@ model_score <- glm(Diabetes_binary ~ scoreCat, data = diabetes,
                    family = binomial)
 summary(model_score)
 
-Confint(model_score, vcov. = vcovHC(model_score, type = "HC0"))
+Confint(model_score, vcov. = vcovHC(model_score, type = "HC0")) 
 ```
 
 ## Regression Adjustment
@@ -102,35 +102,20 @@ summary(model_score_adj)
 Confint(model_score_adj, vcov. = vcovHC(model_score_adj, type = "HC0"))
 ```
 
+## Combine the Results
 
 ```{r}
+results <- summary(model_score)$coefficients
 
-knitr::kable(reg_results, digits = c(2, 2, 2, 3), align = "c", caption = "Linear Regression Results")
+rownames(results) <- c("score", "adjusted score")
 
+results <- results[, c("Estimate", "Std. Error", "z value")]
+colnames(results) <- c("Estimate", "2.5 %", "97.5 %")
 
-```
+results["score", ] <- c(-0.5980872, -0.620951, -0.5752233)
+results["adjusted score", ] <- c(-0.3774651, -0.4016496, -0.3532806)
 
-
-
-```{r}
-reg_results[1,"Std. Error"] <- 2
-```
-
-
-```{r}
-colnames(reg_results) <- c("a","b","c","d")
-```
-
-```{r}
-reg_results
-```
-
-```{r}
-summary(model_score)$coefficients
-```
-
-```{r}
-knitr::kable(reg_results, digits = c(2, 2, 2, 3), align = "c", caption = "Linear Regression Results")
+knitr::kable(results, digits = c(4, 4, 4), align = "c", caption = "Adjustment Results")
 ```
 
 
