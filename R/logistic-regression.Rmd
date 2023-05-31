@@ -100,11 +100,10 @@ model_treat_adj <- glm(Diabetes_binary ~ Smoker + PhysActivity + Fruits +
                        data = diabetes, family = binomial)
 summary(model_treat_adj)
 
-model_score_adj <- glm(Diabetes_binary ~ scoreCat + Sex + Age + Income, 
+model_score_adj <- glm(Diabetes_binary ~ scoreCat + Sex + Age + Income,
                        data = diabetes, family = binomial)
 summary(model_score_adj)
 ```
-
 
 
 
