@@ -46,6 +46,8 @@ diabetes[1:3]
 
 # Using the FCI Algorithm to estimate an ancestral graph
 
+## make Gaussian assumption
+
 ```{r, results = 'hide'}
 continuous <- diabetes[,c("scoreCat", "Stroke", "HighChol", "HighBP", "BMI", 
                           "HeartDiseaseorAttack", "Education", "AnyHealthcare", 
@@ -72,6 +74,33 @@ fci.fit@amat
 if (plotcpdag) {
 	#dev.off()
   plot(fci.fit)
+}
+```
+
+
+## for part of discrete case due to computational cost
+
+```{r, results='hide'}
+fci_dis <- diabetes[,c("scoreCat", "HighBP", 
+                          "HeartDiseaseorAttack", "Education", "AnyHealthcare", 
+                            "Diabetes_binary")]
+
+V <- colnames(fci_dis)
+sapply(fci_dis, function(v) nlevels(as.factor(v)))
+suffStat <- list(dm = fci_dis, nlev = c(2,2,2,6,2,2), adaptDF = FALSE)
+
+pc.D <- fci(suffStat, indepTest = disCItest, alpha = 0.01, 
+           labels = V, verbose = TRUE)
+```
+
+## draw the graph
+
+```{r}
+if (require(Rgraphviz)) {
+  
+  plot(pc.D, main = "Estimated CPDAG", labels = c("scoreCat", "HighBP", 
+                          "HeartDiseaseorAttack", "Education", "AnyHealthcare", 
+                           "Diabetes_binary"))
 }
 ```
 
