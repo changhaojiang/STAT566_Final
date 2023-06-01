@@ -1,25 +1,67 @@
 ---
-title: "Paper"
-author: "authors"
-abstract: "This paper is about diabetes"
-keywords: "pandoc, r markdown, knitr"
+title: "Relationship between lifestyle risk factors and development of prediabetes or diabetes, based on BRFSS 2015 questionnaire"
+author: "Tianyang Jiang, Changhao Jiang, Liuye Huang"
+abstract: "This paper is about diabetes..."
 
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 geometry: margin=1in
 output: 
   pdf_document:
+    latex_engine: pdflatex
     keep_tex: TRUE
 fontsize: 12pt
 header-includes:
    - \usepackage{natbib}
    - \bibliographystyle{abbrvnat}
    - \setcitestyle{authoryear, open={((},close={)}}
+   - \usepackage{indentfirst}
 ---
 
-**Keywords:** pandoc, r markdown, knitr
+**Keywords:** Diabetes, Lifestyle intervention, Causal inference, R-learner, PC algorithm, Regression adjustment
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+library(knitr)
+library(tidyverse)
+library(rigr)
+library(dplyr)
+library(gtsummary)
+library(flextable)
+library(ggplot2)
+library(rlearner)
+library(data.table)
+library(randomForest)
+library(sandwich)
+library(car)
+
+data_dir <- "~/Desktop"
+data <- fread(file.path(data_dir, "Diabetes.csv"))
+```
+
+
+```{r, echo=FALSE, results='hide', warning=FALSE, eval=FALSE}
+set.seed(1)
+fit.forest= randomForest(Diabetes_binary ~ HvyAlcoholConsump + Smoker + 
+                           PhysActivity + Fruits + Veggies,
+                         data = balanced_diabetes, na.action = na.roughfix)
+importance(fit.forest)
+
+w1 = importance(fit.forest)[1] / sum(importance(fit.forest))
+w2 = importance(fit.forest)[2] / sum(importance(fit.forest))
+w3 = importance(fit.forest)[3] / sum(importance(fit.forest))
+w4 = importance(fit.forest)[4] / sum(importance(fit.forest))
+w5 = importance(fit.forest)[5] / sum(importance(fit.forest))
+
+diabetes$score = -diabetes$HvyAlcoholConsump * w1 - diabetes$Smoker * w2 + 
+  diabetes$PhysActivity * w3 + diabetes$Fruits * w4 + diabetes$Veggies * w5
+
+mean_score <- mean(diabetes$score)
+
+diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
 ```
 
 
@@ -27,23 +69,209 @@ knitr::opts_chunk$set(echo = TRUE)
 
 [Provide an introduction to the research topic, including the background, motivation, and research questions/hypotheses.]
 
-# Data and Methods
+# Background
 
-## Data Description
 
-[Describe the dataset used in the study, including its source, variables, and any preprocessing steps.]
+# Data Description
+```{r, echo=FALSE, results='hide'}
+data$ageCat <- factor(data$Age, levels = 1:13, 
+                      labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
+                                 "45-49", "50-54", "55-59", "60-64", "65-69", 
+                                 "70-74", "75-79", ">=80") )
 
-## Statistical Methods
+data$eduCat <- factor(data$Education, levels = 1:6, labels = 
+                        c("Never attended school or only kindergarten", 
+                          "Elementary", "Some high school", 
+                          "High school graduate", 
+                          "Some college or technical school", 
+                          "College graduate"))
 
+data$incomeCat <- factor(data$Income, levels = 1:8, 
+                         labels = c("< $10,000", "[$10,000, $15,000)", 
+                                    "[$15,000, $20,000)", "[$20,000, $25,000)", 
+                                    "[$25,000, $35,000)", "[$35,000, $50,000)", 
+                                    "[$50,000, $75,000)", ">= $75,000"))
+
+data$diaCat <- factor(data$Diabetes_binary, levels = 0:1, 
+                      labels = c("Healthy", "Prediabetes or diabetes"))
+
+data$scoreCat2 = ifelse(data$scoreCat == "> mean score", 1, 0)
+
+data$scoreCat2 <- as.numeric(data$scoreCat2)
+data$Diabetes_binary <- as.numeric(data$Diabetes_binary)
+data$gender <- factor(data$Sex, levels = 0:1, labels = c("Female", "Male"))
+
+tabl1 <- data %>% select(Diabetes_binary, Sex, ageCat, eduCat, incomeCat, 
+                         scoreCat, Smoker,PhysActivity, Fruits, Veggies, 
+                         HvyAlcoholConsump, HighBP, HighChol, BMI, Stroke, 
+                         HeartDiseaseorAttack, AnyHealthcare) %>%
+     tbl_summary(by = Diabetes_binary, label = 
+                   list(Diabetes_binary ~ "Diagnosis of diabetes",
+     Sex ~ "Gender", ageCat ~ "5-year age category", eduCat ~ "Education", 
+     incomeCat ~ "Income", scoreCat ~ "Lifestyle composition score", 
+     Smoker ~ "Have smoked at least 100 cigarettes lifetime", 
+     PhysActivity ~ "Physical activity in past 30 days (not including job)", 
+     Fruits ~ "Consume fruit >= 1 times per day", 
+     Veggies ~ "Consume vegetables >= 1 times per day", 
+     HvyAlcoholConsump ~ "Heavy drinkers", HighBP ~ "High blood pressure", 
+     HighChol ~ "High cholesterol", Stroke ~ "Ever had a stroke", 
+     HeartDiseaseorAttack ~ "Coronary heart disease or myocardial infarction", 
+     AnyHealthcare ~ "Any health coverage"), 
+     statistic = all_continuous() ~ "{mean}({sd})",
+                   type = all_continuous() ~ 'continuous2',
+                   missing = "no") %>% add_p()
+```
+
+```{r, echo=FALSE}
+plot_income <- ggplot(data, 
+                      aes(x=factor(incomeCat), fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", 
+                                  "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Income category", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+     ggtitle("Income of participants in different lifestyle score category and diabetes status")
+plot_income  
+
+# plots on age categories
+plot_age <- ggplot(data, 
+                      aes(x=factor(ageCat), fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", 
+                                  "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Age category", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+     ggtitle("Age of participants in different lifestyle score category and diabetes status")
+plot_age
+
+# plot on gender
+plot_gender <- ggplot(data, 
+                      aes(x=gender, fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", 
+                                  "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Gender", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+     ggtitle("Gender of participants in different lifestyle score category and diabetes status")
+plot_gender
+```
+
+
+# Statistical Methods
 [Explain the statistical methods employed in the analysis, such as linear regression, Bayesian analysis, etc. Provide a brief rationale for their selection.]
+
+
+## Find Scores with Random Forest
+
+
+## Build DAG with PC Algorithm and Literature Review
+
+
+## Logistic Regression with Adjustment
+
+```{r, echo=FALSE, results='hide', message=FALSE}
+data$scoreCat <- ifelse(data$scoreCat == "> mean score",1,0)
+diabetes <- data
+
+model_score <- glm(Diabetes_binary ~ scoreCat, data = diabetes, 
+                   family = binomial)
+summary(model_score)
+
+Confint(model_score, vcov. = vcovHC(model_score, type = "HC0")) 
+
+model_score_adj <- glm(Diabetes_binary ~ scoreCat + Sex + Age + Income,
+                       data = diabetes, family = binomial)
+summary(model_score_adj)
+
+Confint(model_score_adj, vcov. = vcovHC(model_score_adj, type = "HC0"))
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+results <- summary(model_score)$coefficients
+
+rownames(results) <- c("score", "adjusted score")
+
+results <- results[, c("Estimate", "Std. Error", "z value")]
+colnames(results) <- c("Estimate", "2.5 %", "97.5 %")
+
+results["score", ] <- c(-0.5980872, -0.620951, -0.5752233)
+results["adjusted score", ] <- c(-0.3774651, -0.4016496, -0.3532806)
+
+knitr::kable(results, digits = c(4, 4, 4), align = "c", caption = "Adjustment Results")
+```
+
+
+## R-learner
+
+In this section, we investigate the heterogeneous effects of lifestyle factors on subgroups defined by age, sex, and income using the R-learner (Nie and Wager, 2017). This approach utilizes machine learning to estimate treatment effects in observational studies.
+
+The R-learner is used to estimate the Conditional Average Treatment Effect (CATE), $\tau^*(z_1,z_2,z_3) = E(Y(1)-Y(0)|Z_1=z_1,Z_2 = z_2,Z_3 = z_3)$, with $Z_1$, $Z_2$, and $Z_3$ denoting individual features (age, income, and gender) and $Y_i$ the observed outcome.
+
+Using the $\texttt{rlasso}$ method in $\texttt{rlearner}$, we input age, gender, and income as features, and a categorical score as the treatment variable, with diabetes presence indicating observed response. The algorithm of R-learner also includes cross-validation, we set it with ten folds. Finally, we visualize CATE CATE across income levels, gender, and age groups.
+
+In the visualization of CATE across different income groups, we observe a correlation between higher income and a larger average treatment effect within the same income bracket. This trend is particularly pronounced among individuals earning over $50,000 annually, where the mean effect significantly surpasses that of other groups.
+
+When comparing CATE across genders, it is noteworthy that the average treatment effect for females is lower than that for males.
+
+The CATE across age groups shows a distinct decline as age increases. For individuals younger than 24, there is little discernible difference in the outcome between those maintaining good or poor lifestyles.
+
+```{r, echo=FALSE, message=FALSE}
+set.seed(1)
+rW  = cbind(data$Age,data$Sex,data$Income)
+rW = as.matrix(rW)
+rA = data$scoreCat
+rY = data$Diabetes_binary
+
+rlasso_fit = rlasso(rW, rA, rY,k_folds = 10)
+rlasso_est = predict(rlasso_fit, rW)
+
+plotdata <- data.frame(Income = data$Income, 
+                   Estimator =rlasso_est)
+plotdata$Income_Group <- cut(plotdata$Income, breaks=c(0,2, 4,6, 8), labels=c("<15000","[15000,25000)","[25000,50000)", ">=50000"))
+ggplot(plotdata, aes(x = Income_Group, y = Estimator, fill = Income_Group)) + 
+  geom_boxplot() + 
+  ggtitle("The result of R-learner(Income)") +
+  xlab("Income Group") +
+  ylab("Estimator") +
+  scale_fill_brewer(palette="Set1") +
+  theme_bw()
+
+plotdata <- data.frame(Sex = data$Sex, 
+                   Estimator =rlasso_est)
+plotdata$Gender_Group <- ifelse(plotdata$Sex==0,"Female","Male")
+
+ggplot(plotdata, aes(x = Gender_Group, y = Estimator, fill = Gender_Group)) + 
+  geom_boxplot() + 
+  ggtitle("The result of R-learner(Gender)") +
+  xlab("Gender Group") +
+  ylab("Estimator") +
+  scale_fill_brewer(palette="Set2") +
+  theme_bw()
+
+plotdata <- data.frame(Age = data$Age, 
+                   Estimator =rlasso_est)
+plotdata$Age = as.factor(plotdata$Age)
+age_labels <- c("18-24","25-29","30-34","35-39","40-44","45-49","51-54","55-59","60-64","65-69","70-74","75-79",">=80")
+ggplot(plotdata, aes(x = Age, y = Estimator, fill = Age)) + 
+  geom_boxplot() + 
+  ggtitle("The result of R-learner(Age)") +
+  xlab("Age Group") +
+  ylab("Estimator") +
+  scale_fill_manual(values = rainbow(length(unique(plotdata$Age))), labels = age_labels) +
+  theme_bw()
+```
+
 
 # Results
 
-[Present the main findings of your analysis, including any relevant tables, figures, or plots.]
-
-## Regression Analysis
-
-[Provide a detailed interpretation of the regression analysis results, including coefficients, standard errors, p-values, and any other relevant statistics.]
+From the R-learner plots, we discern that higher income individuals are less likely to develop diabetes, even have poor lifestyle choices. This pattern is particularly noticeable for those earning over $50,000 annually. Regarding gender, the difference in diabetes risk between good and poor lifestyle habits is more pronounced in females than males, underscoring the importance of healthy habits for women. In terms of age, the substantial variation in CATE across different age groups suggests that maintaining a healthy lifestyle becomes increasingly vital as one ages. This is because poor lifestyle choices are more likely to induce diabetes as age increases.
 
 # Discussion
 
@@ -56,4 +284,10 @@ knitr::opts_chunk$set(echo = TRUE)
 # References
 
 [Include a list of cited references using a suitable citation style (e.g., APA, MLA, IEEE).]
+
+\newpage
+# Appendix
+
+
+
 
