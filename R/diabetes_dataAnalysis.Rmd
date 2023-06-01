@@ -1,0 +1,111 @@
+---
+title: "CS&SS 566 final project"
+author: "Liuye Huang
+output: pdf_document
+date: "2023-05-04"
+---
+
+```{r setup, include=FALSE, echo=F}
+rm(list = ls())
+directory <- "/Users/lorahuang/Documents/02 My UW/Course/2023 Spring/CS566 causal modeling/final project/"
+setwd(paste0(directory))
+getwd()
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(rigr)
+library(dplyr)
+library(gtsummary)
+library(flextable)
+library(ggplot2)
+
+data <- read.csv("Diabetes.csv")
+
+data$ageCat <- factor(data$Age, levels = 1:13, labels = c("18-24", "25-29", "30-34", "35-39", "40-44", "45-49", "50-54", "55-59", "60-64", "65-69", "70-74", "75-79", ">=80") )
+
+data$eduCat <- factor(data$Education, levels = 1:6, labels = c("Never attended school or only kindergarten", "Elementary", "Some high school", "High school graduate", "Some college or technical school", "College graduate"))
+
+data$incomeCat <- factor(data$Income, levels = 1:8, labels = c("< $10,000", "[$10,000, $15,000)", "[$15,000, $20,000)", "[$20,000, $25,000)", "[$25,000, $35,000)", "[$35,000, $50,000)", "[$50,000, $75,000)", ">= $75,000"))
+
+data$diaCat <- factor(data$Diabetes_binary, levels = 0:1, labels = c("Healthy", "Prediabetes or diabetes"))
+
+data$scoreCat2 = ifelse(data$scoreCat == "> mean score", 1, 0)
+
+data$scoreCat2 <- as.numeric(data$scoreCat2)
+data$Diabetes_binary <- as.numeric(data$Diabetes_binary)
+data$gender <- factor(data$Sex, levels = 0:1, labels = c("Female", "Male"))
+```
+
+```{r Table 1, include=FALSE, echo=FALSE}
+tabl1 <- data %>% select(Diabetes_binary, Sex, ageCat, eduCat, incomeCat, scoreCat, Smoker,
+                         PhysActivity, Fruits, Veggies, HvyAlcoholConsump, HighBP, HighChol, 
+                         BMI, Stroke, HeartDiseaseorAttack, AnyHealthcare) %>%
+     tbl_summary(by = Diabetes_binary, label = list(Diabetes_binary ~ "Diagnosis of diabetes",
+     Sex ~ "Gender", ageCat ~ "5-year age category", eduCat ~ "Education", incomeCat ~ "Income", scoreCat ~ "Lifestyle composition score", Smoker ~ "Have smoked at least 100 cigarettes lifetime", PhysActivity ~ "Physical activity in past 30 days (not including job)", Fruits ~ "Consume fruit >= 1 times per day", Veggies ~ "Consume vegetables >= 1 times per day", HvyAlcoholConsump ~ "Heavy drinkers", HighBP ~ "High blood pressure", HighChol ~ "High cholesterol", Stroke ~ "Ever had a stroke", HeartDiseaseorAttack ~ "Coronary heart disease or myocardial infarction", AnyHealthcare ~ "Any health coverage"), 
+     statistic = all_continuous() ~ "{mean}({sd})",
+                   type = all_continuous() ~ 'continuous2',
+                   missing = "no") %>% add_p()
+
+myTable1 <- as_flex_table(tabl1)
+save_as_docx(myTable1, path = "Table1Mean.docx")
+```
+
+```{r }
+# current confounders: age, income, gender
+# plots on income
+plot_income <- ggplot(data, 
+                      aes(x=factor(incomeCat), fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Income category", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+     ggtitle("Income of participants in different lifestyle score category and diabetes status")
+plot_income  
+ggsave("income.png")
+
+# plots on age categories
+plot_age <- ggplot(data, 
+                      aes(x=factor(ageCat), fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Age category", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+     ggtitle("Age of participants in different lifestyle score category and diabetes status")
+ggsave("age.png")
+
+# plot on gender
+plot_gender <- ggplot(data, 
+                      aes(x=gender, fill = factor(diaCat))) + 
+     geom_bar(position = "dodge", width = 0.8)+
+     scale_fill_manual(values = c("Healthy" = "lightblue", "Prediabetes or diabetes" = "darkorange"))+
+     labs(x = "Gender", y = "Count", fill = "Diabetes status") +
+     facet_wrap(~scoreCat, ncol =1) +
+     theme_bw() +
+     theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+     ggtitle("Gender of participants in different lifestyle score category and diabetes status")
+ggsave("gender.png")
+
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+drink <- diabete %>% 
+       ggplot(aes(x=as.factor(HvyAlcoholConsump), y=as.factor(Diabetes_binary)))+
+       geom_boxplot()+
+       ggtitle("")
+drink
+
+summary(lm(Diabetes_binary ~HvyAlcoholConsump+, data = diabete))
+summary(lm(Diabetes_012 ~HvyAlcoholConsump+PhysActivity+Fruits+Veggies+Smoker+BMI, data = diabete1))
+summary(glm(Diabetes_binary ~HvyAlcoholConsump+PhysActivity+Fruits+Veggies+Smoker+BMI, data = diabete3, family = binomial))
+summary(glm(Diabetes_binary ~HvyAlcoholConsump+PhysActivity+Fruits+Veggies+Smoker+BMI, data = diabete2, family = binomial))
+```
+
