@@ -81,7 +81,7 @@
 \title{Relationship between lifestyle risk factors and development of
 prediabetes or diabetes, based on BRFSS 2015 questionnaire}
 \author{Tianyang Jiang, Changhao Jiang, Liuye Huang}
-\date{May 31, 2023}
+\date{June 01, 2023}
 
 \begin{document}
 \maketitle
@@ -92,40 +92,86 @@ This paper is about diabetes\ldots{}
 \textbf{Keywords:} Diabetes, Lifestyle intervention, Causal inference,
 R-learner, PC algorithm, Regression adjustment
 
-\hypertarget{introduction}{%
-\section{Introduction}\label{introduction}}
-
-{[}Provide an introduction to the research topic, including the
-background, motivation, and research questions/hypotheses.{]}
-
 \hypertarget{background}{%
-\section{Background}\label{background}}
+\subsection{Background}\label{background}}
 
 \hypertarget{data-description}{%
-\section{Data Description}\label{data-description}}
+\subsection{Data Description}\label{data-description}}
 
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-1.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-2.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-3.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-3-1.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-3-2.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-3-3.pdf}
 
 \hypertarget{statistical-methods}{%
-\section{Statistical Methods}\label{statistical-methods}}
+\subsection{Statistical Methods}\label{statistical-methods}}
 
 {[}Explain the statistical methods employed in the analysis, such as
 linear regression, Bayesian analysis, etc. Provide a brief rationale for
 their selection.{]}
 
 \hypertarget{find-scores-with-random-forest}{%
-\subsection{Find Scores with Random
+\subsubsection{Find Scores with Random
 Forest}\label{find-scores-with-random-forest}}
 
 \hypertarget{build-dag-with-pc-algorithm-and-literature-review}{%
-\subsection{Build DAG with PC Algorithm and Literature
+\subsubsection{Build DAG with PC Algorithm and Literature
 Review}\label{build-dag-with-pc-algorithm-and-literature-review}}
 
 \hypertarget{logistic-regression-with-adjustment}{%
-\subsection{Logistic Regression with
+\subsubsection{Logistic Regression with
 Adjustment}\label{logistic-regression-with-adjustment}}
+
+We consider the variable diabetes as the outcome variable, denoted as
+\(Y\), and the variable score as the treatment variable, denoted as
+\(X\). Our objective is to estimate the average causal effect of the
+score on diabetes, which can be expressed as \(E[Y(X=1)] - E[Y(X=0)]\).
+
+Before estimating the causal effect, it is essential to examine the
+association between diabetes and scores. In this case, diabetes takes
+the value 1 if a person has diabetes and 0 if a person does not have
+diabetes. Additionally, we assume a linear relationship between the
+log-odds of diabetes and scores. Hence, it is reasonable to employ a
+simple logistic model to capture their relationship.
+
+We consider the following model:
+\(\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 X\), where \(p\)
+represents the probability of an individual having diabetes,
+\(\frac{p}{1-p}\) represents the odds, and \(\text{log}(\frac{p}{1-p})\)
+represents the log-odds. In this model, \(X\) corresponds to the score,
+and \(\beta\) represents the corresponding coefficients.
+
+Based on the Directed Acyclic Graph (DAG) shown in Graph 1, we observe
+three confounding paths. These paths indicate that confounding
+variables, namely age, gender, and income, simultaneously connect
+diabetes and scores. Consequently, estimating the effect of the score
+without accounting for these confounding variables would introduce bias.
+Therefore, it is necessary to determine whether controlling for these
+confounders would yield better estimates of the parameter of interest.
+
+Using the adjustment criterion proposed by Shpitser et al.~(2012), we
+conclude that adjusting for the three variables (denoted as
+\(Z=\{Z_1, Z_2, Z_3\}\), where \(Z_1\) represents age, \(Z_2\)
+represents income, and \(Z_3\) represents gender) is sufficient. This
+adjustment blocks all spurious paths from scores to diabetes and
+addresses confounding for the three variables. Moreover, it also blocks
+the confounding path for the variable education. Importantly, this
+adjustment does not block any of the causal paths from scores to
+diabetes and does not open any spurious paths. Consequently, we can
+utilize the non-parametric identification result from the observational
+distribution, which states that \(E[Y(X=x)] = E[E[Y|X=x,Z]]\). Notably,
+when \(Z\) satisfies the adjustment criterion, the conditional
+ignorability assumption holds, i.e., \(Y_x \perp\!\!\!\perp X |Z\). This
+assumption aids in recovering the causal effect and improving the
+accuracy of the estimation, as highlighted by Cinelli et al.~(2022).
+
+Since we assume a linear relationship between the log-odds of diabetes
+and scores, age, income, and gender, which aligns with the
+aforementioned model, the logistic regression for confounding adjustment
+can be written as
+\(\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 X + \gamma_1 Z_1 + \gamma_2 Z_2 + \gamma_3 Z_3\),
+where \(\gamma\) represents the corresponding coefficients.
+Consequently, the average causal effect corresponds to the regression
+coefficient \(\beta_1\) (Cinelli et al., 2022).
 
 \begin{longtable}[]{@{}lccc@{}}
 \caption{Adjustment Results}\tabularnewline
@@ -142,8 +188,9 @@ adjusted score & -0.3775 & -0.4016 & -0.3533 \\
 \bottomrule()
 \end{longtable}
 
-\hypertarget{r-learner}{%
-\subsection{R-learner}\label{r-learner}}
+\hypertarget{identity-heterogeneous-effects-with-r-learner}{%
+\subsubsection{Identity Heterogeneous Effects with
+R-learner}\label{identity-heterogeneous-effects-with-r-learner}}
 
 In this section, we investigate the heterogeneous effects of lifestyle
 factors on subgroups defined by age, sex, and income using the R-learner
@@ -181,7 +228,7 @@ in the outcome between those maintaining good or poor lifestyles.
 \includegraphics{template_files/figure-latex/unnamed-chunk-7-3.pdf}
 
 \hypertarget{results}{%
-\section{Results}\label{results}}
+\subsection{Results}\label{results}}
 
 From the R-learner plots, we discern that higher income individuals are
 less likely to develop diabetes, even have poor lifestyle choices. This
@@ -195,20 +242,20 @@ as one ages. This is because poor lifestyle choices are more likely to
 induce diabetes as age increases.
 
 \hypertarget{discussion}{%
-\section{Discussion}\label{discussion}}
+\subsection{Discussion}\label{discussion}}
 
 {[}Discuss the implications and significance of the findings, relate
 them to the research questions/hypotheses, and address any limitations
 or potential sources of bias.{]}
 
 \hypertarget{conclusion}{%
-\section{Conclusion}\label{conclusion}}
+\subsection{Conclusion}\label{conclusion}}
 
 {[}Summarize the key takeaways from the study and suggest possible
 avenues for future research.{]}
 
 \hypertarget{references}{%
-\section{References}\label{references}}
+\subsection{References}\label{references}}
 
 {[}Include a list of cited references using a suitable citation style
 (e.g., APA, MLA, IEEE).{]}
@@ -216,6 +263,6 @@ avenues for future research.{]}
 \newpage
 
 \hypertarget{appendix}{%
-\section{Appendix}\label{appendix}}
+\subsection{Appendix}\label{appendix}}
 
 \end{document}
