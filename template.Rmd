@@ -1,21 +1,27 @@
 ---
-title: "Your Paper Title"
-author: 
-  - Your Name
-  - Your Affiliation
-date: \today
-output:
-  pdf_document: default
+title: "Paper"
+author: "authors"
+abstract: "This paper is about diabetes"
+keywords: "pandoc, r markdown, knitr"
+
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+geometry: margin=1in
+output: 
+  pdf_document:
+    keep_tex: TRUE
+fontsize: 12pt
+header-includes:
+   - \usepackage{natbib}
+   - \bibliographystyle{abbrvnat}
+   - \setcitestyle{authoryear, open={((},close={)}}
 ---
 
+**Keywords:** pandoc, r markdown, knitr
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Abstract
-
-[Provide a concise summary of the paper's objectives, methods, key findings, and implications.]
 
 # Introduction
 
