@@ -42,29 +42,6 @@ data_dir <- "~/Desktop"
 data <- fread(file.path(data_dir, "Diabetes.csv"))
 ```
 
-
-```{r, echo=FALSE, results='hide', warning=FALSE, eval=FALSE}
-set.seed(1)
-fit.forest= randomForest(Diabetes_binary ~ HvyAlcoholConsump + Smoker + 
-                           PhysActivity + Fruits + Veggies,
-                         data = balanced_diabetes, na.action = na.roughfix)
-importance(fit.forest)
-
-w1 = importance(fit.forest)[1] / sum(importance(fit.forest))
-w2 = importance(fit.forest)[2] / sum(importance(fit.forest))
-w3 = importance(fit.forest)[3] / sum(importance(fit.forest))
-w4 = importance(fit.forest)[4] / sum(importance(fit.forest))
-w5 = importance(fit.forest)[5] / sum(importance(fit.forest))
-
-diabetes$score = -diabetes$HvyAlcoholConsump * w1 - diabetes$Smoker * w2 + 
-  diabetes$PhysActivity * w3 + diabetes$Fruits * w4 + diabetes$Veggies * w5
-
-mean_score <- mean(diabetes$score)
-
-diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
-```
-
-
 # Introduction
 
 [Provide an introduction to the research topic, including the background, motivation, and research questions/hypotheses.]
@@ -169,6 +146,26 @@ plot_gender
 
 ## Find Scores with Random Forest
 
+```{r, echo=FALSE, results='hide', warning=FALSE, eval=FALSE}
+set.seed(1)
+fit.forest= randomForest(Diabetes_binary ~ HvyAlcoholConsump + Smoker + 
+                           PhysActivity + Fruits + Veggies,
+                         data = balanced_diabetes, na.action = na.roughfix)
+importance(fit.forest)
+
+w1 = importance(fit.forest)[1] / sum(importance(fit.forest))
+w2 = importance(fit.forest)[2] / sum(importance(fit.forest))
+w3 = importance(fit.forest)[3] / sum(importance(fit.forest))
+w4 = importance(fit.forest)[4] / sum(importance(fit.forest))
+w5 = importance(fit.forest)[5] / sum(importance(fit.forest))
+
+diabetes$score = -diabetes$HvyAlcoholConsump * w1 - diabetes$Smoker * w2 + 
+  diabetes$PhysActivity * w3 + diabetes$Fruits * w4 + diabetes$Veggies * w5
+
+mean_score <- mean(diabetes$score)
+
+diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
+```
 
 ## Build DAG with PC Algorithm and Literature Review
 
