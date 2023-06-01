@@ -42,14 +42,11 @@ data_dir <- "~/Desktop"
 data <- fread(file.path(data_dir, "Diabetes.csv"))
 ```
 
-# Introduction
 
-[Provide an introduction to the research topic, including the background, motivation, and research questions/hypotheses.]
-
-# Background
+## Background
 
 
-# Data Description
+## Data Description
 ```{r, echo=FALSE, results='hide'}
 data$ageCat <- factor(data$Age, levels = 1:13, 
                       labels = c("18-24", "25-29", "30-34", "35-39", "40-44", 
@@ -140,11 +137,11 @@ plot_gender
 ```
 
 
-# Statistical Methods
+## Statistical Methods
 [Explain the statistical methods employed in the analysis, such as linear regression, Bayesian analysis, etc. Provide a brief rationale for their selection.]
 
 
-## Find Scores with Random Forest
+### Find Scores with Random Forest
 
 ```{r, echo=FALSE, results='hide', warning=FALSE, eval=FALSE}
 set.seed(1)
@@ -167,10 +164,21 @@ mean_score <- mean(diabetes$score)
 diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
 ```
 
-## Build DAG with PC Algorithm and Literature Review
+### Build DAG with PC Algorithm and Literature Review
 
 
-## Logistic Regression with Adjustment
+### Logistic Regression with Adjustment
+We consider the variable diabetes as the outcome variable, denoted as $Y$, and the variable score as the treatment variable, denoted as $X$. Our objective is to estimate the average causal effect of the score on diabetes, which can be expressed as $E[Y(X=1)] - E[Y(X=0)]$.
+
+Before estimating the causal effect, it is essential to examine the association between diabetes and scores. In this case, diabetes takes the value 1 if a person has diabetes and 0 if a person does not have diabetes. Additionally, we assume a linear relationship between the log-odds of diabetes and scores. Hence, it is reasonable to employ a simple logistic model to capture their relationship.
+
+We consider the following model: $\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 X$, where $p$ represents the probability of an individual having diabetes, $\frac{p}{1-p}$ represents the odds, and $\text{log}(\frac{p}{1-p})$ represents the log-odds. In this model, $X$ corresponds to the score, and $\beta$ represents the corresponding coefficients.
+
+Based on the Directed Acyclic Graph (DAG) shown in Graph 1, we observe three confounding paths. These paths indicate that confounding variables, namely age, gender, and income, simultaneously connect diabetes and scores. Consequently, estimating the effect of the score without accounting for these confounding variables would introduce bias. Therefore, it is necessary to determine whether controlling for these confounders would yield better estimates of the parameter of interest.
+
+Using the adjustment criterion proposed by Shpitser et al. (2012), we conclude that adjusting for the three variables (denoted as $Z=\{Z_1, Z_2, Z_3\}$, where $Z_1$ represents age, $Z_2$ represents income, and $Z_3$ represents gender) is sufficient. This adjustment blocks all spurious paths from scores to diabetes and addresses confounding for the three variables. Moreover, it also blocks the confounding path for the variable education. Importantly, this adjustment does not block any of the causal paths from scores to diabetes and does not open any spurious paths. Consequently, we can utilize the non-parametric identification result from the observational distribution, which states that $E[Y(X=x)] = E[E[Y|X=x,Z]]$. Notably, when $Z$ satisfies the adjustment criterion, the conditional ignorability assumption holds, i.e., $Y_x \perp\!\!\!\perp X |Z$. This assumption aids in recovering the causal effect and improving the accuracy of the estimation, as highlighted by Cinelli et al. (2022).
+
+Since we assume a linear relationship between the log-odds of diabetes and scores, age, income, and gender, which aligns with the aforementioned model, the logistic regression for confounding adjustment can be written as $\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 X + \gamma_1 Z_1 + \gamma_2 Z_2 + \gamma_3 Z_3$, where $\gamma$ represents the corresponding coefficients. Consequently, the average causal effect corresponds to the regression coefficient $\beta_1$ (Cinelli et al., 2022).
 
 ```{r, echo=FALSE, results='hide', message=FALSE}
 data$scoreCat <- ifelse(data$scoreCat == "> mean score",1,0)
@@ -205,7 +213,7 @@ knitr::kable(results, digits = c(4, 4, 4), align = "c", caption = "Adjustment Re
 ```
 
 
-## R-learner
+### Identity Heterogeneous Effects with R-learner
 
 In this section, we investigate the heterogeneous effects of lifestyle factors on subgroups defined by age, sex, and income using the R-learner (Nie and Wager, 2017). This approach utilizes machine learning to estimate treatment effects in observational studies.
 
@@ -266,24 +274,24 @@ ggplot(plotdata, aes(x = Age, y = Estimator, fill = Age)) +
 ```
 
 
-# Results
+## Results
 
 From the R-learner plots, we discern that higher income individuals are less likely to develop diabetes, even have poor lifestyle choices. This pattern is particularly noticeable for those earning over $50,000 annually. Regarding gender, the difference in diabetes risk between good and poor lifestyle habits is more pronounced in females than males, underscoring the importance of healthy habits for women. In terms of age, the substantial variation in CATE across different age groups suggests that maintaining a healthy lifestyle becomes increasingly vital as one ages. This is because poor lifestyle choices are more likely to induce diabetes as age increases.
 
-# Discussion
+## Discussion
 
 [Discuss the implications and significance of the findings, relate them to the research questions/hypotheses, and address any limitations or potential sources of bias.]
 
-# Conclusion
+## Conclusion
 
 [Summarize the key takeaways from the study and suggest possible avenues for future research.]
 
-# References
+## References
 
 [Include a list of cited references using a suitable citation style (e.g., APA, MLA, IEEE).]
 
 \newpage
-# Appendix
+## Appendix
 
 
 
