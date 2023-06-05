@@ -51,7 +51,7 @@ Is the relationship still hold after introducing covariates?
 What are the heterogeneous effects of lifestyle factors among subgroups with different age, sex, and income level.
 
 
-## Data Prepration
+## Data Preparation
 
 ### Find Scores with Random Forest
 A lifestyle combination score of behavioral factors was constructed using the information of fruits and vegetables consumption, heavy drinking, smoking, and physical activity. It measures the overall healthiness of an individual's lifestyle. This score can be computed by assigning weights to each variable based on their relative importance and then combining the weighted scores. We use the importance function in random forest to compute the importance of the predictor variables in a random forest model. The importance measure is based on the decrease in the node impurity when the variable is used for splitting in the random forest. Then we use the scaled value of the importance to represent the weight. Suppose the importance of each variable is m1, m2, m3, m4and m5 respectively, then the scaled value is $w_i=\frac{m_i}{m_1+m_2+m_3+m_4+m_5}, i=1,2,3,4,5$. Based on the results of the literature review, we find that smoking($v_1$) and heavy drinking($v_2$) will cause diabetes, while more physical exercises($v_3$), fruits($v_4$) and vegetables consumption($v_5$) will reduce the risk of getting diabetes. Thus the combination score is $Score=-w_1v_1-w_2v_2+w_3v_3+w_4v_4+w_5v_5$. We then convert the continuous variable score into a binary variable. This is achieved through grouping by means of the average. Scores that exceed the mean are set to 1, representing a good lifestyle. Those that fall below the mean are assigned 0, indicating a poor lifestyle.
@@ -242,9 +242,9 @@ knitr::kable(results, digits = c(4, 4, 4), align = "c", caption = "Adjustment Re
 
 In this section, we investigate the heterogeneous effects of lifestyle factors on subgroups defined by age, sex, and income using the R-learner (Nie and Wager, 2017). This approach utilizes machine learning to estimate treatment effects in observational studies.
 
-The R-learner is used to estimate the Conditional Average Treatment Effect (CATE), $\tau^*(z_1,z_2,z_3) = E(Y(1)-Y(0)|Z_1=z_1,Z_2 = z_2,Z_3 = z_3)$, with $Z_1$, $Z_2$, and $Z_3$ denoting individual features (age, income, and gender) and $Y_i$ the observed outcome.
+The R-learner is used to estimate the Conditional Average Treatment Effect (CATE), $\tau^*(z_1,z_2,z_3) = E(Y(1)-Y(0)|Z_1=z_1,Z_2 = z_2,Z_3 = z_3)$, with $Z_1$, $Z_2$, and $Z_3$ denoting individual features (age, income, and gender) and $Y_i$ is the observed outcome.
 
-Using the $\texttt{rlasso}$ method in $\texttt{rlearner}$, we input age, gender, and income as features, and a categorical score as the treatment variable, with diabetes presence indicating observed response. The algorithm of R-learner also includes cross-validation, we set it with ten folds. Finally, we visualize CATE CATE across income levels, gender, and age groups.
+Using the $\texttt{rlasso}$ method in $\texttt{rlearner}$, we input age, gender, and income as features, and a categorical score as the treatment variable, with diabetes presence indicating observed response. The algorithm of R-learner also includes cross-validation, we set it with ten folds. Finally, we visualize CATE across income, gender, and age groups.
 
 In the visualization of CATE across different income groups, we observe a correlation between higher income and a larger average treatment effect within the same income bracket. This trend is particularly pronounced among individuals earning over $50,000 annually, where the mean effect significantly surpasses that of other groups.
 
