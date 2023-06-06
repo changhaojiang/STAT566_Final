@@ -37,6 +37,7 @@ library(data.table)
 library(randomForest)
 library(sandwich)
 library(car)
+theme_set(theme_classic())
 
 data_dir <- "~/Desktop"
 data <- fread(file.path(data_dir, "Diabetes.csv"))
@@ -45,18 +46,25 @@ balanced_diabetes <- fread(file.path(data_dir,"diabetes_binary_5050split_health_
 
 
 ## Background
-With 476.0 million prevalent cases,  1.37 million deaths, and 67.9 million disability-adjusted life-years (DALYs) in 2017, diabetes has become one of the most prominent global concerns in public health. Significant proportions of diabetic burden were considered to be attributed to lifestyle risk factors, such as diet, smoking, drinking, and physical activity (Lin et al. (2021)). This research aims to assess the relationship between modifiable lifestyle risk factors and the risk of developing prediabetes or diabetes, among the U.S. adults.Based on the information mentioned above, we proposed the following research questions: 
-What is the relationship between lifestyle factors and the risk of developing prediabetes or diabetes?
-Is the relationship still hold after introducing covariates? 
-What are the heterogeneous effects of lifestyle factors among subgroups with different age, sex, and income level.
+
+With a staggering 476.0 million prevalent cases, 1.37 million deaths, and 67.9 million disability-adjusted life-years (DALYs) recorded in 2017, diabetes has emerged as a pressing global public health concern. A significant portion of the burden associated with diabetes is believed to be attributable to modifiable lifestyle risk factors, such as diet, smoking, drinking, and physical activity, as suggested by Lin et al. (2021). Therefore, the purpose of this research is to examine the connection between these modifiable lifestyle risk factors and the likelihood of developing prediabetes or diabetes among adults in the United States.
+
+Given the aforementioned background, we have formulated the following research questions:
+
+1. What is the nature of the relationship between lifestyle factors and the risk of developing prediabetes or diabetes?
+
+2. Does this relationship persist even after accounting for covariates?
+
+3. What are the varying effects of lifestyle factors among subgroups characterized by different age, sex, and income levels?
+
+By addressing these research questions, we aim to enhance our understanding of the complex interplay between lifestyle factors and the risk of prediabetes or diabetes, ultimately informing targeted interventions and preventive measures in diverse populations.
 
 
 ## Data Preparation
 
 ### Find Scores with Random Forest
-A lifestyle combination score of behavioral factors was constructed using the information of fruits and vegetables consumption, heavy drinking, smoking, and physical activity. It measures the overall healthiness of an individual's lifestyle. This score can be computed by assigning weights to each variable based on their relative importance and then combining the weighted scores. We use the importance function in random forest to compute the importance of the predictor variables in a random forest model. The importance measure is based on the decrease in the node impurity when the variable is used for splitting in the random forest. Then we use the scaled value of the importance to represent the weight. Suppose the importance of each variable is m1, m2, m3, m4and m5 respectively, then the scaled value is $w_i=\frac{m_i}{m_1+m_2+m_3+m_4+m_5}, i=1,2,3,4,5$. Based on the results of the literature review, we find that smoking($v_1$) and heavy drinking($v_2$) will cause diabetes, while more physical exercises($v_3$), fruits($v_4$) and vegetables consumption($v_5$) will reduce the risk of getting diabetes. Thus the combination score is $Score=-w_1v_1-w_2v_2+w_3v_3+w_4v_4+w_5v_5$. We then convert the continuous variable score into a binary variable. This is achieved through grouping by means of the average. Scores that exceed the mean are set to 1, representing a good lifestyle. Those that fall below the mean are assigned 0, indicating a poor lifestyle.
 
-In addition to considering the exposure variables, it's important to take into account other factors that may be linked to diabetes, such as covariates, precision variables, and confounding variables. According to Bird et al. (2015), Nanayakkara et al. (2021) and Lin et al. (2021), certain covariates such as high blood pressure, stroke, heart disease attack and high cholesterol are connected to diabetes, while other covariates such as gender, income, BMI and air pollution have direct effects on diabetes. Therefore, it's crucial to carefully assess and account for all of these variables when studying diabetes.
+A lifestyle combination score of behavioral factors was constructed using the information of fruits and vegetables consumption, heavy drinking, smoking, and physical activity. It measures the overall healthiness of an individual's lifestyle. This score can be computed by assigning weights to each variable based on their relative importance and then combining the weighted scores. We use the importance function in random forest to compute the importance of the predictor variables in a random forest model. The importance measure is based on the decrease in the node impurity when the variable is used for splitting in the random forest. Then we use the scaled value of the importance to represent the weight. Suppose the importance of each variable is $m_1, m_2, m_3, m_4$ and $m_5$ respectively, then the scaled value is $w_i=\frac{m_i}{m_1+m_2+m_3+m_4+m_5}$, where $i=1,2,3,4,5$. Based on the results of the literature review, we find that smoking($v_1$) and heavy drinking($v_2$) will cause diabetes, while more physical exercises($v_3$), fruits($v_4$) and vegetables consumption($v_5$) will reduce the risk of getting diabetes. Thus the combination score is $Score=-w_1v_1-w_2v_2+w_3v_3+w_4v_4+w_5v_5$. We then convert the continuous variable score into a binary variable. This is achieved through grouping by means of the average. Scores that exceed the mean are set to 1, representing a good lifestyle. Those that fall below the mean are assigned 0, indicating a poor lifestyle.
 
 ```{r, echo=FALSE, warning=FALSE}
 set.seed(1)
@@ -65,7 +73,6 @@ diabetes <- data
 fit.forest= randomForest(Diabetes_binary ~ HvyAlcoholConsump + Smoker + 
                            PhysActivity + Fruits + Veggies,
                          data = balanced_diabetes, na.action = na.roughfix)
-importance(fit.forest)
 
 w1 = importance(fit.forest)[1] / sum(importance(fit.forest))
 w2 = importance(fit.forest)[2] / sum(importance(fit.forest))
@@ -79,7 +86,12 @@ diabetes$score = -diabetes$HvyAlcoholConsump * w1 - diabetes$Smoker * w2 +
 mean_score <- mean(diabetes$score)
 
 diabetes$scoreCat <- ifelse(diabetes$score > mean_score, 1, 0)
+
+ran_table <- importance(fit.forest)
+colnames(ran_table) <- "Weighting"
+knitr::kable(ran_table, digits = c(4, 4, 4, 4, 4), align = "c", caption = "Scoring Weights for Each Covariate")
 ```
+
 
 ### Data Description
 Dataset for this study was collected from the The Behavioral Risk Factor Surveillance System (BRFSS) questionnaire in 2015. BRFSS is a nationwide telephone survey system held by the U.S. Center for Disease Control and Prevention (CDC). It collects data on health-related risk behaviors, chronic health conditions, and preventive services usage among the U.S. residents. This system was initiated in 1984 and updated annually, with more than 400,000 adults being interviewed each year. 
@@ -88,9 +100,9 @@ The 2015 questionnaire contains three parts, including the core component, optio
 
 Based on the BRFSS 2015 dataset, intotal 253,680 survey responses were included. The outcome of interest was a binary variable. It equal to 1 indicated whether being diagnosed with prediabetes or diabetes, and equal to 0 meat no diabetes or only during pregnancy. 
 
-In total, 25,3680 participants were enrolled in the study. Among them, 35,346 (14%) were diagnosed with prediabetes or diabetes.  Among people who had been diagnosed with prediabetes or diabetes, 48% were male and only 29% had completed college graduate; most of them were elders and with income level between $15,000-$75,000; 75% of them were with high blood pressure and 67% with high cholesterol, and the mean BMI was 32 (SD: 7) kg/m²; 9.2% of them ever had experienced a stroke and 22% with coronary heart disease or myocardial infarction; 96% of them had any kind of health coverage. Among the healthy participants, 43% were male and 44% of them had completed college graduate; most of them were middle-aged adults and 38% of them had the annual income equal or greater than $75,000; only 38% of them had high blood pressure or high cholesterol, respectively, and the mean BMI was 28 (SD: 6) kg/m²; less than 8% of them ever had experienced stroke, coronary heart disease or myocardial infarction; 95% of them had any kind of health coverage. Regarding lifestyles, 55% and 69% of them had the composition score above the mean score of the total population among those who had been diagnosed with prediabetes or diabetes and the healthy, respectively. When specifying different lifestyles, compared with the health participants, more people in the prediabetes/diabetes group ever smoked, were less physically active, and consumed less fruits and vegetables, but less people were heavy drinkers.  More details regarding the distribution of these characteristics were displayed in Table 1. 
+In total, 25,3680 participants were enrolled in the study. Among them, 35,346 (14%) were diagnosed with prediabetes or diabetes.  Among people who had been diagnosed with prediabetes or diabetes, 48% were male and only 29% had completed college graduate; most of them were elders and with income level between $15,000-$75,000; 75% of them were with high blood pressure and 67% with high cholesterol, and the mean BMI was 32 (SD: 7) kg/m²; 9.2% of them ever had experienced a stroke and 22% with coronary heart disease or myocardial infarction; 96% of them had any kind of health coverage. Among the healthy participants, 43% were male and 44% of them had completed college graduate; most of them were middle-aged adults and 38% of them had the annual income equal or greater than $75,000; only 38% of them had high blood pressure or high cholesterol, respectively, and the mean BMI was 28 (SD: 6) kg/m²; less than 8% of them ever had experienced stroke, coronary heart disease or myocardial infarction; 95% of them had any kind of health coverage. Regarding lifestyles, 55% and 69% of them had the composition score above the mean score of the total population among those who had been diagnosed with prediabetes or diabetes and the healthy, respectively. When specifying different lifestyles, compared with the health participants, more people in the prediabetes/diabetes group ever smoked, were less physically active, and consumed less fruits and vegetables, but less people were heavy drinkers.  More details regarding the distribution of these characteristics were displayed in the summary of the dataset (Appendix). 
 
-Figure 2 a., b., c. revealed that the distribution of participants’ income level, age, and gender varies across different lifestyle combination score categories and diabetes status. This corresponded to our DAG that participants’ income level, age and gender may confound the relationship between lifestyles and the development of prediabetes or diabetes. 
+Figure 1 a., b., c. revealed that the distribution of participants’ income level, age, and gender varies across different lifestyle combination score categories and diabetes status. This corresponded to our DAG that participants’ income level, age and gender may confound the relationship between lifestyles and the development of prediabetes or diabetes. 
 
 ```{r, echo=FALSE, results='hide'}
 data$ageCat <- factor(data$Age, levels = 1:13, 
@@ -151,7 +163,8 @@ plot_income <- ggplot(data,
      facet_wrap(~scoreCat, ncol =1) +
      theme_bw() +
      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-     ggtitle("Income of participants in different lifestyle score category and diabetes status")
+     ggtitle("Figure1a: Income of participants in different 
+             lifestyle score category and diabetes status")
 plot_income  
 
 # plots on age categories
@@ -164,7 +177,8 @@ plot_age <- ggplot(data,
      facet_wrap(~scoreCat, ncol =1) +
      theme_bw() +
      theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-     ggtitle("Age of participants in different lifestyle score category and diabetes status")
+     ggtitle("Figure1b: Age of participants in different 
+             lifestyle score category and diabetes status")
 plot_age
 
 # plot on gender
@@ -177,22 +191,30 @@ plot_gender <- ggplot(data,
      facet_wrap(~scoreCat, ncol =1) +
      theme_bw() +
      theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-     ggtitle("Gender of participants in different lifestyle score category and diabetes status")
+     ggtitle("Figure1c: Gender of participants in different 
+             lifestyle score category and diabetes status")
 plot_gender
 ```
 
 
 ## Methods
-[Explain the statistical methods employed in the analysis, such as linear regression, Bayesian analysis, etc. Provide a brief rationale for their selection.]
-
-
 
 ### Build DAG with PC Algorithm and Literature Review
 
-[blank]
-As Ali (2013) pointed out, although individuals may have similar environmental exposures, certain people are more prone to developing diabetes compared to others, and this elevated susceptibility seems to be passed down through genetics. So, genetics is considered a precision variable because it is solely associated with diabetes and is not related to other variables.
+We initially employ the PC algorithm to determine the relationships between the variables. Prior to running the PC algorithm, we assume that all variables are discrete (as indicated by the data description) and observed. We also assume that the graph is acyclic and adhere to the faithfulness and Markov assumptions. The PC algorithm proceeds as follows (Spirtes et al., 2001): starting with a complete graph, we remove edges between variables $X$ and $Y$ if $X$ and $Y$ are conditionally independent given $Z$ for some (potentially empty) conditioning set. We begin with an empty conditioning set and gradually increase its size. Following these steps, we obtain the skeleton of the graph. Subsequently, we identify immoralities in the graph, whereby if variable $W$ is not in the conditioning set that renders $X$ and $Y$ conditionally independent, the configuration $X-W-Y$ forms an immorality. Then we used the fact that we found all immoralities to orient more edges. 
+
+However, we encountered issues with the graph when solely relying on the PC algorithm. For instance, it suggests a direct impact of stroke on income, which is highly implausible. Additionally, we need to determine the directionality of edges based on more reliable sources.
+
+In addition to considering the exposure variables, it is crucial to account for other factors associated with diabetes, such as covariates, precision variables, and confounding variables. According to Bird et al. (2015), Nanayakkara et al. (2021), and Lin et al. (2021), certain covariates like high blood pressure, stroke, heart disease, and high cholesterol are linked to diabetes, while others like BMI directly affect diabetes. Therefore, a comprehensive assessment and incorporation of these variables is essential when studying diabetes.
+
+From a more reasonable perspective, it is expected that high blood pressure and diabetes, as well as high cholesterol and diabetes, often coexist and influence each other (Schofield et al., 2016 $\&$ Peter et al., 2018). Nevertheless, in this analysis, we assume that high cholesterol and high blood pressure impact diabetes for convenience.
+
+Furthermore, confounding variables such as age, gender, and income, as identified by Bird et al. (2015), can influence the relationship between specific exposure variables, covariates, and outcome variables in diabetes research.
+
+To enhance the completeness and practicality of the directed acyclic graph (DAG), we also incorporate potentially unmeasured confounding variables, such as air pollution, and potential precision variables, such as genetics, to get the final DAG (Appendix). As highlighted by Ali (2013), while individuals may experience similar environmental exposures, some people are more susceptible to developing diabetes due to genetic factors. Genetics, therefore, is considered a precision variable that exclusively relates to diabetes without affecting other variables.
 
 ### Logistic Regression with Adjustment
+
 We consider the variable diabetes as the outcome variable, denoted as $Y$, and the variable score as the treatment variable, denoted as $X$. Our objective is to estimate the average causal effect of the score on diabetes, which can be expressed as $E[Y(X=1)] - E[Y(X=0)]$.
 
 Before estimating the causal effect, it is essential to examine the association between diabetes and scores. In this case, diabetes takes the value 1 if a person has diabetes and 0 if a person does not have diabetes. Additionally, we assume a linear relationship between the log-odds of diabetes and scores. Hence, it is reasonable to employ a simple logistic model to capture their relationship.
@@ -205,7 +227,78 @@ Using the adjustment criterion proposed by Shpitser et al. (2012), we conclude t
 
 Since we assume a linear relationship between the log-odds of diabetes and scores, age, income, and gender, which aligns with the aforementioned model, the logistic regression for confounding adjustment can be written as $\text{log}(\frac{p}{1-p}) = \beta_0 + \beta_1 X + \gamma_1 Z_1 + \gamma_2 Z_2 + \gamma_3 Z_3$, where $\gamma$ represents the corresponding coefficients. Consequently, the average causal effect corresponds to the regression coefficient $\beta_1$ (Cinelli et al., 2022).
 
+### Identity Heterogeneous Effects with R-learner
+
+In this section, we investigate the heterogeneous effects of lifestyle factors on subgroups defined by age, sex, and income using the R-learner (Nie and Wager, 2017). This approach utilizes machine learning to estimate treatment effects in observational studies.
+
+The R-learner is used to estimate the Conditional Average Treatment Effect (CATE), $\tau^*(z_1,z_2,z_3) = E(Y(1)-Y(0) \mid Z_1=z_1,Z_2 = z_2,Z_3 = z_3)$, with $Z_1$, $Z_2$, and $Z_3$ denoting individual features (age, income, and gender) and $Y_i$ is the observed outcome.
+
+Using the $\texttt{rlasso}$ method in $\texttt{rlearner}$, we input age, gender, and income as features, and a categorical score as the treatment variable, with diabetes presence indicating observed response. The algorithm of R-learner also includes cross-validation, we set it with ten folds. Finally, we visualize CATE across income, gender, and age groups.
+
+In the visualization of CATE across different income groups, we observe a correlation between higher income and a larger average treatment effect within the same income bracket. This trend is particularly pronounced among individuals earning over $50,000 annually, where the mean effect significantly surpasses that of other groups.
+
+When comparing CATE across genders, it is noteworthy that the average treatment effect for females is lower than that for males.
+
+The CATE across age groups shows a distinct decline as age increases. For individuals younger than 24, there is little discernible difference in the outcome between those maintaining good or poor lifestyles.
+
+```{r, echo=FALSE, message=FALSE}
+set.seed(1)
+data$scoreCat <- ifelse(data$scoreCat == "> mean score",1,0)
+rW  = cbind(data$Age,data$Sex,data$Income)
+rW = as.matrix(rW)
+rA = data$scoreCat
+rY = data$Diabetes_binary
+
+rlasso_fit = rlasso(rW, rA, rY, k_folds = 10)
+rlasso_est = predict(rlasso_fit, rW)
+
+plotdata <- data.frame(Income = data$Income, 
+                   Estimator =rlasso_est)
+plotdata$Income_Group <- cut(plotdata$Income, breaks=c(0, 2, 4, 6, 8), labels=c("<15000","[15000,25000)","[25000,50000)", ">=50000"))
+ggplot(plotdata, aes(x = Income_Group, y = Estimator, fill = Income_Group)) + 
+  geom_boxplot() + 
+  ggtitle("Figure2a: The result of R-learner(Income)") +
+  xlab("Income Group") +
+  ylab("Estimator") +
+  scale_fill_brewer(palette="Set1") +
+  theme_bw()
+
+plotdata <- data.frame(Sex = data$Sex, 
+                   Estimator =rlasso_est)
+plotdata$Gender_Group <- ifelse(plotdata$Sex==0,"Female","Male")
+
+ggplot(plotdata, aes(x = Gender_Group, y = Estimator, fill = Gender_Group)) + 
+  geom_boxplot() + 
+  ggtitle("Figure2b: The result of R-learner(Gender)") +
+  xlab("Gender Group") +
+  ylab("Estimator") +
+  scale_fill_brewer(palette="Set2") +
+  theme_bw()
+
+plotdata <- data.frame(Age = data$Age, 
+                   Estimator =rlasso_est)
+plotdata$Age = as.factor(plotdata$Age)
+age_labels <- c("18-24","25-29","30-34","35-39","40-44","45-49","51-54","55-59",
+                "60-64","65-69","70-74","75-79",">=80")
+
+ggplot(plotdata, aes(x = Age, y = Estimator, fill = Age)) + 
+  geom_boxplot() + 
+  ggtitle("Figure2c: The result of R-learner(Age)") +
+  xlab("Age Group") +
+  ylab("Estimator") +
+  scale_fill_manual(values = rainbow(length(unique(plotdata$Age))), labels = age_labels) +
+  theme_bw() 
+```
+
+
+## Results
+
+In the results of logistic regression with adjustment (Table 2), we can see the potential causal effect of the adjusted lifestyle combination score on odds of developing diabetes is 0.6856, which is larger than the coefficient of the unadjusted lifestyle combination score on the odds of diabetes, which is 0.5499.
+
+From the R-learner plots, we discern that higher income individuals are less likely to develop diabetes, even have poor lifestyle choices. This pattern is particularly noticeable for those earning over $50,000 annually. Regarding gender, the difference in diabetes risk between good and poor lifestyle habits is more pronounced in females than males, underscoring the importance of healthy habits for women. In terms of age, the substantial variation in CATE across different age groups suggests that maintaining a healthy lifestyle becomes increasingly vital as one ages. This is because poor lifestyle choices are more likely to induce diabetes as age increases.
+
 ```{r, echo=FALSE, results='hide', message=FALSE}
+data <- fread(file.path(data_dir, "Diabetes.csv"))
 data$scoreCat <- ifelse(data$scoreCat == "> mean score",1,0)
 diabetes <- data
 
@@ -231,78 +324,13 @@ rownames(results) <- c("score", "adjusted score")
 results <- results[, c("Estimate", "Std. Error", "z value")]
 colnames(results) <- c("Estimate", "2.5 %", "97.5 %")
 
-results["score", ] <- c(-0.5980872, -0.620951, -0.5752233)
-results["adjusted score", ] <- c(-0.3774651, -0.4016496, -0.3532806)
+results["score", ] <- c(exp(-0.5980872), exp(-0.620951), exp(-0.5752233))
+results["adjusted score", ] <- c(exp(-0.3774651), exp(-0.4016496), exp(-0.3532806))
 
 knitr::kable(results, digits = c(4, 4, 4), align = "c", caption = "Adjustment Results")
 ```
 
 
-### Identity Heterogeneous Effects with R-learner
-
-In this section, we investigate the heterogeneous effects of lifestyle factors on subgroups defined by age, sex, and income using the R-learner (Nie and Wager, 2017). This approach utilizes machine learning to estimate treatment effects in observational studies.
-
-The R-learner is used to estimate the Conditional Average Treatment Effect (CATE), $\tau^*(z_1,z_2,z_3) = E(Y(1)-Y(0)|Z_1=z_1,Z_2 = z_2,Z_3 = z_3)$, with $Z_1$, $Z_2$, and $Z_3$ denoting individual features (age, income, and gender) and $Y_i$ is the observed outcome.
-
-Using the $\texttt{rlasso}$ method in $\texttt{rlearner}$, we input age, gender, and income as features, and a categorical score as the treatment variable, with diabetes presence indicating observed response. The algorithm of R-learner also includes cross-validation, we set it with ten folds. Finally, we visualize CATE across income, gender, and age groups.
-
-In the visualization of CATE across different income groups, we observe a correlation between higher income and a larger average treatment effect within the same income bracket. This trend is particularly pronounced among individuals earning over $50,000 annually, where the mean effect significantly surpasses that of other groups.
-
-When comparing CATE across genders, it is noteworthy that the average treatment effect for females is lower than that for males.
-
-The CATE across age groups shows a distinct decline as age increases. For individuals younger than 24, there is little discernible difference in the outcome between those maintaining good or poor lifestyles.
-
-```{r, echo=FALSE, message=FALSE}
-set.seed(1)
-rW  = cbind(data$Age,data$Sex,data$Income)
-rW = as.matrix(rW)
-rA = data$scoreCat
-rY = data$Diabetes_binary
-
-rlasso_fit = rlasso(rW, rA, rY,k_folds = 10)
-rlasso_est = predict(rlasso_fit, rW)
-
-plotdata <- data.frame(Income = data$Income, 
-                   Estimator =rlasso_est)
-plotdata$Income_Group <- cut(plotdata$Income, breaks=c(0,2, 4,6, 8), labels=c("<15000","[15000,25000)","[25000,50000)", ">=50000"))
-ggplot(plotdata, aes(x = Income_Group, y = Estimator, fill = Income_Group)) + 
-  geom_boxplot() + 
-  ggtitle("The result of R-learner(Income)") +
-  xlab("Income Group") +
-  ylab("Estimator") +
-  scale_fill_brewer(palette="Set1") +
-  theme_bw()
-
-plotdata <- data.frame(Sex = data$Sex, 
-                   Estimator =rlasso_est)
-plotdata$Gender_Group <- ifelse(plotdata$Sex==0,"Female","Male")
-
-ggplot(plotdata, aes(x = Gender_Group, y = Estimator, fill = Gender_Group)) + 
-  geom_boxplot() + 
-  ggtitle("The result of R-learner(Gender)") +
-  xlab("Gender Group") +
-  ylab("Estimator") +
-  scale_fill_brewer(palette="Set2") +
-  theme_bw()
-
-plotdata <- data.frame(Age = data$Age, 
-                   Estimator =rlasso_est)
-plotdata$Age = as.factor(plotdata$Age)
-age_labels <- c("18-24","25-29","30-34","35-39","40-44","45-49","51-54","55-59",
-                "60-64","65-69","70-74","75-79",">=80")
-ggplot(plotdata, aes(x = Age, y = Estimator, fill = Age)) + 
-  geom_boxplot() + 
-  ggtitle("The result of R-learner(Age)") +
-  xlab("Age Group") +
-  ylab("Estimator") +
-  scale_fill_manual(values = rainbow(length(unique(plotdata$Age))), labels = age_labels) +
-  theme_bw()
-```
-
-
-## Results
-
-From the R-learner plots, we discern that higher income individuals are less likely to develop diabetes, even have poor lifestyle choices. This pattern is particularly noticeable for those earning over $50,000 annually. Regarding gender, the difference in diabetes risk between good and poor lifestyle habits is more pronounced in females than males, underscoring the importance of healthy habits for women. In terms of age, the substantial variation in CATE across different age groups suggests that maintaining a healthy lifestyle becomes increasingly vital as one ages. This is because poor lifestyle choices are more likely to induce diabetes as age increases.
 
 ## Discussion
 
@@ -325,7 +353,27 @@ From the perspective of income, it is crucial to pay particular attention to the
 
 ## References
 
-[Include a list of cited references using a suitable citation style (e.g., APA, MLA, IEEE).]
+Lin, X., Xu, Y., Pan, X., Xu, J., Ding, Y., Sun, X., . . . Shan, P. F. (2020). Global, regional, and national burden and trend of diabetes in 195 countries and territories: an analysis from 1990 to 2025. Sci Rep, 10(1), 14790. doi:10.1038/s41598-020-71908-9
+
+Centers for Disease Control and Prevention. (n.d.). Behavioral Risk Factor Surveillance System. Retrieved May 4, 2023, from https://www.cdc.gov/brfss/index.html 
+
+Centers for Disease Control and Prevention (CDC). Behavioral Risk Factor Surveillance System Survey Data. Atlanta, Georgia: U.S. Department of Health and Human Services, Centers for Disease Control and Prevention, 2015. 
+
+Bird, Y., Lemstra, M., Rogers, M., & Moraros, J. (2015). The relationship between socioeconomic status/income and prevalence of diabetes and associated conditions: A cross-sectional population-based study in Saskatchewan, Canada. International journal for equity in health, 14, 93. https://doi.org/10.1186/s12939-015-0237-0 
+
+Nanayakkara N, Curtis AJ, Heritier S, et al. Impact of age at type 2 diabetes mellitus diagnosis on mortality and vascular complications: systematic review and meta-analyses. Diabetologia. 2021;64(2):275–287. doi:10.1007/s00125-020-05319-w 
+
+Cinelli, C., Forney, A., & Pearl, J. (2022). A Crash Course in Good and Bad Controls. Sociological Methods & Research, 0(0). https://doi.org/10.1177/00491241221099552 
+
+Ali O. (2013). Genetics of type 2 diabetes. World journal of diabetes, 4(4), 114–123. https://doi.org/10.4239/wjd.v4.i4.114 
+
+Spirtes, P., Glymour, C., & Scheines, R. (2021) Causation, Prediction, and Search. MIT Press. 
+
+Nie, X., Wager, S. (2021). Quasi-oracle estimation of heterogeneous treatment effects, Biometrika, 108(2), 299–319. https://doi.org/10.1093/biomet/asaa076
+
+Schofield, J. D., Liu, Y., Rao-Balakrishna, P., Malik, R. A., & Soran, H. (2016). Diabetes Dyslipidemia. Diabetes therapy : research, treatment and education of diabetes and related disorders, 7(2), 203–219. https://doi.org/10.1007/s13300-016-0167-x
+
+Petrie, J. R., Guzik, T. J., & Touyz, R. M. (2018). Diabetes, Hypertension, and Cardiovascular Disease: Clinical Insights and Vascular Mechanisms. The Canadian journal of cardiology, 34(5), 575–584. https://doi.org/10.1016/j.cjca.2017.12.005
 
 \newpage
 ## Appendix
@@ -336,15 +384,16 @@ From the perspective of income, it is crucial to pay particular attention to the
 tabl1
 ```
 
-### DAG
-
-
-
 ### Definition (adjustment criterion (Shpitser et al., 2012)) 
 A set of variables Z in the adjustment set satisfies the adjustment criterion relative to (X, Y) in a DAG G if:
 
 - No element in Z is a descendant in $G_{\Bar{x}}$ (the DAG G without the edges with arrows coming into X) of any $W \notin X$ which lies on a proper causal path from X to Y.
 - All non-causal paths in G from X to Y are blocked by Z.
+
+### DAG
+
+
+
 
 
 
