@@ -65,7 +65,6 @@
 \usepackage{natbib}
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear, open={((},close={)}}
-\usepackage{indentfirst}
 \ifLuaTeX
   \usepackage{selnolig}  % disable illegal ligatures
 \fi
@@ -73,20 +72,33 @@
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same} % disable monospaced font for URLs
 \hypersetup{
-  pdftitle={Relationship between lifestyle risk factors and development of prediabetes or diabetes, based on BRFSS 2015 questionnaire},
+  pdftitle={Relationship between Lifestyle Risk Factors and Development of Prediabetes or Diabetes, based on BRFSS 2015 Questionnaire},
   pdfauthor={Tianyang Jiang, Changhao Jiang, Liuye Huang},
   hidelinks,
   pdfcreator={LaTeX via pandoc}}
 
-\title{Relationship between lifestyle risk factors and development of
-prediabetes or diabetes, based on BRFSS 2015 questionnaire}
+\title{Relationship between Lifestyle Risk Factors and Development of
+Prediabetes or Diabetes, based on BRFSS 2015 Questionnaire}
 \author{Tianyang Jiang, Changhao Jiang, Liuye Huang}
-\date{June 05, 2023}
+\date{June 07, 2023}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-This paper is about diabetes\ldots{}
+This project examines the link between lifestyle factors and the risk of
+prediabetes or diabetes. Using a cross-sectional design and data from
+the 2015 BRFSS questionnaire, we calculate a lifestyle combination score
+with random forest and construct a DAG using the PC algorithm. We
+analyze the distribution of demographic, lifestyle, and medical
+characteristics among participants. Regression Adjustment helps us
+determine the average treatment effect, while R-learner detects
+heterogeneous treatment effects in subgroups (age, income, gender). Our
+findings suggest that a healthier lifestyle is associated with a lower
+risk of prediabetes or diabetes. However, it's important to note the
+limitations of inferring causality in cross-sectional studies.
+Identifying vulnerable groups can guide prioritized preventive measures,
+with particular attention to low-income individuals, women, and
+middle-aged to elderly individuals.
 \end{abstract}
 
 \textbf{Keywords:} Diabetes, Lifestyle intervention, Causal inference,
@@ -118,7 +130,7 @@ research questions:
   Does this relationship persist even after accounting for covariates?
 \item
   What are the varying effects of lifestyle factors among subgroups
-  characterized by different age, sex, and income levels?
+  characterized by different age, gender, and income levels?
 \end{enumerate}
 
 By addressing these research questions, we aim to enhance our
@@ -128,51 +140,6 @@ interventions and preventive measures in diverse populations.
 
 \hypertarget{data-preparation}{%
 \subsection{Data Preparation}\label{data-preparation}}
-
-\hypertarget{find-scores-with-random-forest}{%
-\subsubsection{Find Scores with Random
-Forest}\label{find-scores-with-random-forest}}
-
-A lifestyle combination score of behavioral factors was constructed
-using the information of fruits and vegetables consumption, heavy
-drinking, smoking, and physical activity. It measures the overall
-healthiness of an individual's lifestyle. This score can be computed by
-assigning weights to each variable based on their relative importance
-and then combining the weighted scores. We use the importance function
-in random forest to compute the importance of the predictor variables in
-a random forest model. The importance measure is based on the decrease
-in the node impurity when the variable is used for splitting in the
-random forest. Then we use the scaled value of the importance to
-represent the weight. Suppose the importance of each variable is
-\(m_1, m_2, m_3, m_4\) and \(m_5\) respectively, then the scaled value
-is \(w_i=\frac{m_i}{m_1+m_2+m_3+m_4+m_5}, i=1,2,3,4,5\). Based on the
-results of the literature review, we find that smoking(\(v_1\)) and
-heavy drinking(\(v_2\)) will cause diabetes, while more physical
-exercises(\(v_3\)), fruits(\(v_4\)) and vegetables consumption(\(v_5\))
-will reduce the risk of getting diabetes. Thus the combination score is
-\(Score=-w_1v_1-w_2v_2+w_3v_3+w_4v_4+w_5v_5\). We then convert the
-continuous variable score into a binary variable. This is achieved
-through grouping by means of the average. Scores that exceed the mean
-are set to 1, representing a good lifestyle. Those that fall below the
-mean are assigned 0, indicating a poor lifestyle.
-
-\begin{longtable}[]{@{}lc@{}}
-\caption{Scoring Weights for Each Covariate}\tabularnewline
-\toprule()
-& weighting \\
-\midrule()
-\endfirsthead
-\toprule()
-& weighting \\
-\midrule()
-\endhead
-HvyAlcoholConsump & 81.3077 \\
-Smoker & 63.2298 \\
-PhysActivity & 220.4939 \\
-Fruits & 23.4497 \\
-Veggies & 46.8822 \\
-\bottomrule()
-\end{longtable}
 
 \hypertarget{data-description}{%
 \subsubsection{Data Description}\label{data-description}}
@@ -192,46 +159,50 @@ current health behaviors. The optional modules consisted of topics of
 health status and behaviors that were not covered in the core set, such
 as diabetes, immunization, and multiple cancer screening (U.S. CDC).
 
-Based on the BRFSS 2015 dataset, intotal 253,680 survey responses were
-included. The outcome of interest was a binary variable. It equal to 1
-indicated whether being diagnosed with prediabetes or diabetes, and
-equal to 0 meat no diabetes or only during pregnancy.
+\hypertarget{find-scores-with-random-forest}{%
+\subsubsection{Find Scores with Random
+Forest}\label{find-scores-with-random-forest}}
 
-In total, 25,3680 participants were enrolled in the study. Among them,
-35,346 (14\%) were diagnosed with prediabetes or diabetes. Among people
-who had been diagnosed with prediabetes or diabetes, 48\% were male and
-only 29\% had completed college graduate; most of them were elders and
-with income level between \$15,000-\$75,000; 75\% of them were with high
-blood pressure and 67\% with high cholesterol, and the mean BMI was 32
-(SD: 7) kg/m²; 9.2\% of them ever had experienced a stroke and 22\% with
-coronary heart disease or myocardial infarction; 96\% of them had any
-kind of health coverage. Among the healthy participants, 43\% were male
-and 44\% of them had completed college graduate; most of them were
-middle-aged adults and 38\% of them had the annual income equal or
-greater than \$75,000; only 38\% of them had high blood pressure or high
-cholesterol, respectively, and the mean BMI was 28 (SD: 6) kg/m²; less
-than 8\% of them ever had experienced stroke, coronary heart disease or
-myocardial infarction; 95\% of them had any kind of health coverage.
-Regarding lifestyles, 55\% and 69\% of them had the composition score
-above the mean score of the total population among those who had been
-diagnosed with prediabetes or diabetes and the healthy, respectively.
-When specifying different lifestyles, compared with the health
-participants, more people in the prediabetes/diabetes group ever smoked,
-were less physically active, and consumed less fruits and vegetables,
-but less people were heavy drinkers. More details regarding the
-distribution of these characteristics were displayed in the summary of
-the dataset (Appendix).
+A lifestyle combination score of behavioral factors was constructed
+using the information of fruits and vegetables consumption, heavy
+drinking, smoking, and physical activity. It measures the overall
+healthiness of an individual's lifestyle. This score can be computed by
+assigning weights to each variable based on their relative importance
+and then combining the weighted scores. We use the importance function
+in random forest to compute the importance of the predictor variables in
+a random forest model. The importance measure is based on the decrease
+in the node impurity when the variable is used for splitting in the
+random forest. Then we use the scaled value of the importance to
+represent the weight. Suppose the importance of each variable is
+\(m_1, m_2, m_3, m_4\) and \(m_5\) respectively, then the scaled value
+is \(w_i=\frac{m_i}{m_1+m_2+m_3+m_4+m_5}\), where \(i=1,2,3,4,5\). Based
+on the results of the literature review, we find that smoking(\(v_1\))
+and heavy drinking(\(v_2\)) will cause diabetes, while more physical
+exercises(\(v_3\)), fruits(\(v_4\)) and vegetables consumption(\(v_5\))
+will reduce the risk of getting diabetes. Thus the combination score is
+\(Score=-w_1v_1-w_2v_2+w_3v_3+w_4v_4+w_5v_5\). We then convert the
+continuous variable score into a binary variable. This is achieved
+through grouping by means of the average. Scores that exceed the mean
+are set to 1, representing a good lifestyle. Those that fall below the
+mean are assigned 0, indicating a poor lifestyle.
 
-Figure 1 a., b., c.~revealed that the distribution of participants'
-income level, age, and gender varies across different lifestyle
-combination score categories and diabetes status. This corresponded to
-our DAG that participants' income level, age and gender may confound the
-relationship between lifestyles and the development of prediabetes or
-diabetes.
-
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-1.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-2.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-4-3.pdf}
+\begin{longtable}[]{@{}lc@{}}
+\caption{Scoring Weights for Each Covariate}\tabularnewline
+\toprule()
+& Weighting \\
+\midrule()
+\endfirsthead
+\toprule()
+& Weighting \\
+\midrule()
+\endhead
+HvyAlcoholConsump & 81.3077 \\
+Smoker & 63.2298 \\
+PhysActivity & 220.4939 \\
+Fruits & 23.4497 \\
+Veggies & 46.8822 \\
+\bottomrule()
+\end{longtable}
 
 \hypertarget{methods}{%
 \subsection{Methods}\label{methods}}
@@ -284,11 +255,12 @@ diabetes research.
 To enhance the completeness and practicality of the directed acyclic
 graph (DAG), we also incorporate potentially unmeasured confounding
 variables, such as air pollution, and potential precision variables,
-such as genetics. As highlighted by Ali (2013), while individuals may
-experience similar environmental exposures, some people are more
-susceptible to developing diabetes due to genetic factors. Genetics,
-therefore, is considered a precision variable that exclusively relates
-to diabetes without affecting other variables.
+such as genetics, to get the final DAG (Appendix). As highlighted by Ali
+(2013), while individuals may experience similar environmental
+exposures, some people are more susceptible to developing diabetes due
+to genetic factors. Genetics, therefore, is considered a precision
+variable that exclusively relates to diabetes without affecting other
+variables.
 
 \hypertarget{logistic-regression-with-adjustment}{%
 \subsubsection{Logistic Regression with
@@ -381,29 +353,136 @@ The CATE across age groups shows a distinct decline as age increases.
 For individuals younger than 24, there is little discernible difference
 in the outcome between those maintaining good or poor lifestyles.
 
-\includegraphics{template_files/figure-latex/unnamed-chunk-5-1.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-5-2.pdf}
-\includegraphics{template_files/figure-latex/unnamed-chunk-5-3.pdf}
-
 \hypertarget{results}{%
 \subsection{Results}\label{results}}
 
-In the results of logistic regression with adjustment (Table 2), we can
+In total, 25,3680 participants were enrolled in the study. Among them,
+35,346 (14\%) were diagnosed with prediabetes or diabetes. Among people
+who had been diagnosed with prediabetes or diabetes, 48\% were male and
+only 29\% had completed college graduate; most of them were elders and
+with income level between \$15,000-\$75,000; 75\% of them were with high
+blood pressure and 67\% with high cholesterol, and the mean BMI was 32
+(SD: 7) kg/m²; 9.2\% of them ever had experienced a stroke and 22\% with
+coronary heart disease or myocardial infarction; 96\% of them had any
+kind of health coverage. Among the healthy participants, 43\% were male
+and 44\% of them had completed college graduate; most of them were
+middle-aged adults and 38\% of them had the annual income equal or
+greater than \$75,000; only 38\% of them had high blood pressure or high
+cholesterol, respectively, and the mean BMI was 28 (SD: 6) kg/m²; less
+than 8\% of them ever had experienced stroke, coronary heart disease or
+myocardial infarction; 95\% of them had any kind of health coverage.
+Regarding lifestyles, 55\% and 69\% of them had the composition score
+above the mean score of the total population among those who had been
+diagnosed with prediabetes or diabetes and the healthy, respectively.
+When specifying different lifestyles, compared with the health
+participants, more people in the prediabetes/diabetes group ever smoked,
+were less physically active, and consumed less fruits and vegetables,
+but less people were heavy drinkers. More details regarding the
+distribution of these characteristics were displayed in the summary of
+the dataset (Table 2 and Figure 1 a. - Figure 1 f.).
+
+Figure 2 a., b., c.~revealed that the distribution of participants'
+income level, age, and gender varies across different lifestyle
+combination score categories and diabetes status. This corresponded to
+our DAG that participants' income level, age and gender may confound the
+relationship between lifestyles and the development of prediabetes or
+diabetes.
+
+In the results of logistic regression with adjustment (Table 3), we can
 see the potential causal effect of the adjusted lifestyle combination
 score on odds of developing diabetes is 0.6856, which is larger than the
 coefficient of the unadjusted lifestyle combination score on the odds of
-diabetes, which is 0.5499.
+diabetes, which is 0.5499. And the corresponding 95\% confidence
+intervals using robust standard errors are (0.5374,0.5626) and
+(0.6692,0.7024) respectively.
 
-From the R-learner plots, we discern that higher income individuals are
-less likely to develop diabetes, even have poor lifestyle choices. This
-pattern is particularly noticeable for those earning over \$50,000
-annually. Regarding gender, the difference in diabetes risk between good
-and poor lifestyle habits is more pronounced in females than males,
-underscoring the importance of healthy habits for women. In terms of
-age, the substantial variation in CATE across different age groups
-suggests that maintaining a healthy lifestyle becomes increasingly vital
-as one ages. This is because poor lifestyle choices are more likely to
-induce diabetes as age increases.
+From the R-learner plots (Figure 3 a. - Figure 3 c.), we discern that
+higher income individuals are less likely to develop diabetes, even have
+poor lifestyle choices. This pattern is particularly noticeable for
+those earning over \$50,000 annually. Regarding gender, the difference
+in diabetes risk between good and poor lifestyle habits is more
+pronounced in females than males, underscoring the importance of healthy
+habits for women. In terms of age, the substantial variation in CATE
+across different age groups suggests that maintaining a healthy
+lifestyle becomes increasingly vital as one ages. This is because poor
+lifestyle choices are more likely to induce diabetes as age increases.
+\newline
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.5094}}
+  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1887}}
+  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1792}}
+  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1226}}@{}}
+\toprule()
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Characteristic}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{0}, N = 218,334
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{1}, N = 35,346
+\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
+\textbf{p-value}
+\end{minipage} \\
+\midrule()
+\endhead
+Gender & 94,771 (43\%) & 16,935 (48\%) & \textless0.001 \\
+5-year age category & & & \textless0.001 \\
+18-24 & 5,622 (2.6\%) & 78 (0.2\%) & \\
+25-29 & 7,458 (3.4\%) & 140 (0.4\%) & \\
+30-34 & 10,809 (5.0\%) & 314 (0.9\%) & \\
+35-39 & 13,197 (6.0\%) & 626 (1.8\%) & \\
+40-44 & 15,106 (6.9\%) & 1,051 (3.0\%) & \\
+45-49 & 18,077 (8.3\%) & 1,742 (4.9\%) & \\
+50-54 & 23,226 (11\%) & 3,088 (8.7\%) & \\
+55-59 & 26,569 (12\%) & 4,263 (12\%) & \\
+60-64 & 27,511 (13\%) & 5,733 (16\%) & \\
+65-69 & 25,636 (12\%) & 6,558 (19\%) & \\
+70-74 & 18,392 (8.4\%) & 5,141 (15\%) & \\
+75-79 & 12,577 (5.8\%) & 3,403 (9.6\%) & \\
+\textgreater=80 & 14,154 (6.5\%) & 3,209 (9.1\%) & \\
+Education & & & \textless0.001 \\
+Never attended school or only kindergarten & 127 (\textless0.1\%) & 47
+(0.1\%) & \\
+Elementary & 2,860 (1.3\%) & 1,183 (3.3\%) & \\
+Some high school & 7,182 (3.3\%) & 2,296 (6.5\%) & \\
+High school graduate & 51,684 (24\%) & 11,066 (31\%) & \\
+Some college or technical school & 59,556 (27\%) & 10,354 (29\%) & \\
+College graduate & 96,925 (44\%) & 10,400 (29\%) & \\
+Income & & & \textless0.001 \\
+\textless{} \$10,000 & 7,428 (3.4\%) & 2,383 (6.7\%) & \\
+{[}\$10,000, \$15,000) & 8,697 (4.0\%) & 3,086 (8.7\%) & \\
+{[}\$15,000, \$20,000) & 12,426 (5.7\%) & 3,568 (10\%) & \\
+{[}\$20,000, \$25,000) & 16,081 (7.4\%) & 4,054 (11\%) & \\
+{[}\$25,000, \$35,000) & 21,379 (9.8\%) & 4,504 (13\%) & \\
+{[}\$35,000, \$50,000) & 31,179 (14\%) & 5,291 (15\%) & \\
+{[}\$50,000, \$75,000) & 37,954 (17\%) & 5,265 (15\%) & \\
+\textgreater= \$75,000 & 83,190 (38\%) & 7,195 (20\%) & \\
+Lifestyle composition score & & & \textless0.001 \\
+\textless= mean score & 66,891 (31\%) & 15,745 (45\%) & \\
+\textgreater{} mean score & 151,443 (69\%) & 19,601 (55\%) & \\
+Have smoked at least 100 cigarettes lifetime & 94,106 (43\%) & 18,317
+(52\%) & \textless0.001 \\
+Physical activity in past 30 days (not including job) & 169,633 (78\%) &
+22,287 (63\%) & \textless0.001 \\
+Consume fruit \textgreater= 1 times per day & 140,205 (64\%) & 20,693
+(59\%) & \textless0.001 \\
+Consume vegetables \textgreater= 1 times per day & 179,105 (82\%) &
+26,736 (76\%) & \textless0.001 \\
+Heavy drinkers & 13,424 (6.1\%) & 832 (2.4\%) & \textless0.001 \\
+High blood pressure & 82,225 (38\%) & 26,604 (75\%) & \textless0.001 \\
+High cholesterol & 83,905 (38\%) & 23,686 (67\%) & \textless0.001 \\
+BMI & & & \textless0.001 \\
+Mean(SD) & 28(6) & 32(7) & \\
+Ever had a stroke & 7,024 (3.2\%) & 3,268 (9.2\%) & \textless0.001 \\
+Coronary heart disease or myocardial infarction & 16,015 (7.3\%) & 7,878
+(22\%) & \textless0.001 \\
+Any health coverage & 207,339 (95\%) & 33,924 (96\%) & \textless0.001 \\
+\bottomrule()
+\end{longtable}
+
+\includegraphics{template_files/figure-latex/unnamed-chunk-5-1.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-5-2.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-5-3.pdf}
 
 \begin{longtable}[]{@{}lccc@{}}
 \caption{Adjustment Results}\tabularnewline
@@ -419,6 +498,10 @@ score & 0.5499 & 0.5374 & 0.5626 \\
 adjusted score & 0.6856 & 0.6692 & 0.7024 \\
 \bottomrule()
 \end{longtable}
+
+\includegraphics{template_files/figure-latex/unnamed-chunk-8-1.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-8-2.pdf}
+\includegraphics{template_files/figure-latex/unnamed-chunk-8-3.pdf}
 
 \hypertarget{discussion}{%
 \subsection{Discussion}\label{discussion}}
@@ -566,81 +649,6 @@ Mechanisms. The Canadian journal of cardiology, 34(5), 575--584.
 
 \hypertarget{appendix}{%
 \subsection{Appendix}\label{appendix}}
-
-\hypertarget{summary-of-the-dataset}{%
-\subsubsection{Summary of the dataset}\label{summary-of-the-dataset}}
-
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.5094}}
-  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1887}}
-  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1792}}
-  >{\centering\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.1226}}@{}}
-\toprule()
-\begin{minipage}[b]{\linewidth}\raggedright
-\textbf{Characteristic}
-\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
-\textbf{0}, N = 218,334
-\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
-\textbf{1}, N = 35,346
-\end{minipage} & \begin{minipage}[b]{\linewidth}\centering
-\textbf{p-value}
-\end{minipage} \\
-\midrule()
-\endhead
-Gender & 94,771 (43\%) & 16,935 (48\%) & \textless0.001 \\
-5-year age category & & & \textless0.001 \\
-18-24 & 5,622 (2.6\%) & 78 (0.2\%) & \\
-25-29 & 7,458 (3.4\%) & 140 (0.4\%) & \\
-30-34 & 10,809 (5.0\%) & 314 (0.9\%) & \\
-35-39 & 13,197 (6.0\%) & 626 (1.8\%) & \\
-40-44 & 15,106 (6.9\%) & 1,051 (3.0\%) & \\
-45-49 & 18,077 (8.3\%) & 1,742 (4.9\%) & \\
-50-54 & 23,226 (11\%) & 3,088 (8.7\%) & \\
-55-59 & 26,569 (12\%) & 4,263 (12\%) & \\
-60-64 & 27,511 (13\%) & 5,733 (16\%) & \\
-65-69 & 25,636 (12\%) & 6,558 (19\%) & \\
-70-74 & 18,392 (8.4\%) & 5,141 (15\%) & \\
-75-79 & 12,577 (5.8\%) & 3,403 (9.6\%) & \\
-\textgreater=80 & 14,154 (6.5\%) & 3,209 (9.1\%) & \\
-Education & & & \textless0.001 \\
-Never attended school or only kindergarten & 127 (\textless0.1\%) & 47
-(0.1\%) & \\
-Elementary & 2,860 (1.3\%) & 1,183 (3.3\%) & \\
-Some high school & 7,182 (3.3\%) & 2,296 (6.5\%) & \\
-High school graduate & 51,684 (24\%) & 11,066 (31\%) & \\
-Some college or technical school & 59,556 (27\%) & 10,354 (29\%) & \\
-College graduate & 96,925 (44\%) & 10,400 (29\%) & \\
-Income & & & \textless0.001 \\
-\textless{} \$10,000 & 7,428 (3.4\%) & 2,383 (6.7\%) & \\
-{[}\$10,000, \$15,000) & 8,697 (4.0\%) & 3,086 (8.7\%) & \\
-{[}\$15,000, \$20,000) & 12,426 (5.7\%) & 3,568 (10\%) & \\
-{[}\$20,000, \$25,000) & 16,081 (7.4\%) & 4,054 (11\%) & \\
-{[}\$25,000, \$35,000) & 21,379 (9.8\%) & 4,504 (13\%) & \\
-{[}\$35,000, \$50,000) & 31,179 (14\%) & 5,291 (15\%) & \\
-{[}\$50,000, \$75,000) & 37,954 (17\%) & 5,265 (15\%) & \\
-\textgreater= \$75,000 & 83,190 (38\%) & 7,195 (20\%) & \\
-Lifestyle composition score & & & \textless0.001 \\
-\textless= mean score & 66,891 (31\%) & 15,745 (45\%) & \\
-\textgreater{} mean score & 151,443 (69\%) & 19,601 (55\%) & \\
-Have smoked at least 100 cigarettes lifetime & 94,106 (43\%) & 18,317
-(52\%) & \textless0.001 \\
-Physical activity in past 30 days (not including job) & 169,633 (78\%) &
-22,287 (63\%) & \textless0.001 \\
-Consume fruit \textgreater= 1 times per day & 140,205 (64\%) & 20,693
-(59\%) & \textless0.001 \\
-Consume vegetables \textgreater= 1 times per day & 179,105 (82\%) &
-26,736 (76\%) & \textless0.001 \\
-Heavy drinkers & 13,424 (6.1\%) & 832 (2.4\%) & \textless0.001 \\
-High blood pressure & 82,225 (38\%) & 26,604 (75\%) & \textless0.001 \\
-High cholesterol & 83,905 (38\%) & 23,686 (67\%) & \textless0.001 \\
-BMI & & & \textless0.001 \\
-Mean(SD) & 28(6) & 32(7) & \\
-Ever had a stroke & 7,024 (3.2\%) & 3,268 (9.2\%) & \textless0.001 \\
-Coronary heart disease or myocardial infarction & 16,015 (7.3\%) & 7,878
-(22\%) & \textless0.001 \\
-Any health coverage & 207,339 (95\%) & 33,924 (96\%) & \textless0.001 \\
-\bottomrule()
-\end{longtable}
 
 \hypertarget{definition-adjustment-criterion-shpitser-et-al.-2012}{%
 \subsubsection{Definition (adjustment criterion (Shpitser et al.,
